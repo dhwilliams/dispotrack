@@ -9,21 +9,23 @@
 
 > Goal: Get a running Next.js app with Supabase connected, auth working, and the database schema deployed. Working skeleton we can build on.
 
-### 0.1 — Initialize Next.js Project
-- [ ] Run `npx create-next-app@latest` with TypeScript, Tailwind CSS, App Router, flat `app/` dir
-- [ ] Verify dev server runs (`npm run dev`)
-- [ ] Install core dependencies:
-  - [ ] `@supabase/supabase-js` and `@supabase/ssr`
-  - [ ] `framer-motion`
-  - [ ] `lucide-react` (icon library used by shadcn)
-- [ ] Initialize shadcn/ui (`npx shadcn@latest init`)
-- [ ] Add initial shadcn components: `button`, `input`, `card`, `badge`, `table`, `tabs`, `dialog`, `sonner`, `skeleton`, `separator`, `select`, `tooltip`, `sheet`, `dropdown-menu`, `form`, `label`, `textarea`, `checkbox`, `radio-group`, `date-picker`, `popover`, `command`
-- [ ] Set up Tailwind config with theme colors:
-  - Primary: Logista brand blue-teal (from Caspio header bar)
-  - Status colors: received (blue), in_process (amber), tested (cyan), available (green), sold (purple), recycled (slate)
-- [ ] Create `.env.local` with placeholder Supabase keys
-- [ ] Add `.env.local` to `.gitignore`
-- [ ] Initialize git repo and make initial commit
+### 0.1 — Initialize Next.js Project ✅
+- [x] Run `npx create-next-app@latest` with TypeScript, Tailwind CSS, App Router, flat `app/` dir
+- [x] Verify dev server runs (`npm run dev`)
+- [x] Install core dependencies:
+  - [x] `@supabase/supabase-js` and `@supabase/ssr`
+  - [x] `framer-motion`
+  - [x] `lucide-react` (icon library used by shadcn)
+- [x] Initialize shadcn/ui (`npx shadcn@latest init`)
+- [x] Add initial shadcn components: `button`, `input`, `card`, `badge`, `table`, `tabs`, `dialog`, `sonner`, `skeleton`, `separator`, `select`, `tooltip`, `sheet`, `dropdown-menu`, `form`, `label`, `textarea`, `checkbox`, `radio-group`, `calendar`, `popover`, `command` (22 total — `date-picker` not in registry, using `calendar` + `popover` instead)
+- [x] Set up Tailwind config with theme colors:
+  - Primary: Logista brand teal (oklch 0.42 0.095 185)
+  - Status colors: received (blue), in_process (amber), tested (cyan), graded (indigo), sanitized (teal), available (green), sold (purple), recycled (slate), on_hold (orange)
+  - Asset type colors: desktop (slate), server (blue), laptop (violet), monitor (amber), printer (emerald), phone (rose), tv (orange), network (cyan), other (gray)
+  - Dark sidebar: charcoal (oklch 0.22 0.04 220)
+- [x] Create `.env.local` with placeholder Supabase keys
+- [x] Add `.env.local` to `.gitignore`
+- [x] Initialize git repo and make initial commit
 
 ### 0.2 — Set Up Supabase
 - [ ] Create Supabase project (via dashboard or CLI)
@@ -356,7 +358,7 @@
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| Phase 0: Foundation | Not Started | Next.js, Supabase, Auth, App Shell |
+| Phase 0: Foundation | In Progress | 0.1 done; 0.2 Supabase next |
 | Phase 1: Core Data Entry | Not Started | Clients, Transactions, Asset Intake, Asset Edit |
 | Phase 2: Asset Processing | Not Started | Asset List, HD Crush, Global Search |
 | Phase 3: Reports | Not Started | Disposition & Sanitization Certificates |
