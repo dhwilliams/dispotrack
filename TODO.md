@@ -27,28 +27,30 @@
 - [x] Add `.env.local` to `.gitignore`
 - [x] Initialize git repo and make initial commit
 
-### 0.2 — Set Up Supabase
-- [ ] Create Supabase project (via dashboard or CLI)
-- [ ] Run full database schema migration:
-  - [ ] `clients` table (account_number, name, cost_center, address fields, contact info, external_reference_id)
-  - [ ] `transactions` table (transaction_number, transaction_date, client_id FK, special_instructions, created_by)
-  - [ ] `assets` table (transaction_id FK, serial_number, asset_type enum, manufacturer, model, model_name, mfg_part_number, asset_tag, quantity, notes, bin_location, asset_destination enum, available_for_sale, status enum, external_reference_id)
-  - [ ] `asset_hard_drives` table (asset_id FK, drive_number, serial_number, manufacturer, size, date_crushed)
-  - [ ] `asset_hardware` table (asset_id FK, total_memory, optical_drive_type, color, chassis_type, cpu_info JSONB)
-  - [ ] `asset_grading` table (asset_id FK, cosmetic_category, functioning_category, does_unit_power_up, does_unit_function_properly)
-  - [ ] `asset_type_details` table (asset_id FK, details JSONB — type-specific fields)
-  - [ ] `asset_sanitization` table (asset_id FK, sanitization_method enum, details, wipe_verification_method, hd_sanitization_validation, validator_name, validation_date, inspection_tech, inspection_datetime)
-  - [ ] `asset_sales` table (asset_id FK, logista_so, customer_po, sold_to fields, ebay fields, sale_price, sold_date, shipment fields)
-  - [ ] `asset_status_history` table (asset_id FK, previous_status, new_status, reason_for_change, explanation, changed_by, changed_at)
-  - [ ] `user_profiles` table (id FK to auth.users, email, full_name, role enum: admin/operator/viewer)
-- [ ] Create all indexes (serial_number, transaction_number, client account_number, asset_type, status, etc.)
-- [ ] Set up RLS policies:
-  - [ ] All authenticated users can read all data
-  - [ ] Operators can insert/update assets, transactions, clients
-  - [ ] Admins can manage user_profiles
-  - [ ] Viewers read-only
-- [ ] Generate TypeScript types from Supabase schema
-- [ ] Add real Supabase URL and anon key to `.env.local`
+### 0.2 — Set Up Supabase ✅
+- [x] Create Supabase project (via dashboard)
+- [x] Run full database schema migration (`supabase/migrations/00001_initial_schema.sql`):
+  - [x] `clients` table (account_number, name, cost_center, address fields, contact info, external_reference_id)
+  - [x] `transactions` table (transaction_number, transaction_date, client_id FK, special_instructions, created_by)
+  - [x] `assets` table (transaction_id FK, serial_number, asset_type enum, manufacturer, model, model_name, mfg_part_number, asset_tag, quantity, notes, bin_location, asset_destination enum, available_for_sale, status enum, external_reference_id)
+  - [x] `asset_hard_drives` table (asset_id FK, drive_number, serial_number, manufacturer, size, date_crushed)
+  - [x] `asset_hardware` table (asset_id FK, total_memory, optical_drive_type, color, chassis_type, cpu_info JSONB)
+  - [x] `asset_grading` table (asset_id FK, cosmetic_category, functioning_category, does_unit_power_up, does_unit_function_properly)
+  - [x] `asset_type_details` table (asset_id FK, details JSONB — type-specific fields)
+  - [x] `asset_sanitization` table (asset_id FK, sanitization_method enum, details, wipe_verification_method, hd_sanitization_validation, validator_name, validation_date, inspection_tech, inspection_datetime)
+  - [x] `asset_sales` table (asset_id FK, logista_so, customer_po, sold_to fields, ebay fields, sale_price, sold_date, shipment fields)
+  - [x] `asset_status_history` table (asset_id FK, previous_status, new_status, reason_for_change, explanation, changed_by, changed_at)
+  - [x] `user_profiles` table (id FK to auth.users, email, full_name, role enum: admin/operator/viewer)
+- [x] Create all indexes (17 indexes: serial_number, transaction_number, client account_number, asset_type, status, etc.)
+- [x] Set up RLS policies (`supabase/migrations/00002_rls_policies.sql`):
+  - [x] All authenticated users can read all data
+  - [x] Operators can insert/update assets, transactions, clients
+  - [x] Admins can manage user_profiles
+  - [x] Viewers read-only
+  - [x] Helper functions: get_user_role(), is_admin(), is_operator_or_admin()
+- [x] Generate TypeScript types from Supabase schema (`lib/supabase/types.ts`)
+- [x] Add real Supabase URL and anon key to `.env.local`
+- [x] Verification script passed: 47/47 checks (tables, indexes, RLS, functions, insert/select round-trip with joins)
 
 ### 0.3 — Set Up Auth
 - [ ] Configure Supabase Auth for email/password (disable self-signup)
@@ -358,7 +360,7 @@
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| Phase 0: Foundation | In Progress | 0.1 done; 0.2 Supabase next |
+| Phase 0: Foundation | In Progress | 0.1 ✅, 0.2 ✅; 0.3 Auth next |
 | Phase 1: Core Data Entry | Not Started | Clients, Transactions, Asset Intake, Asset Edit |
 | Phase 2: Asset Processing | Not Started | Asset List, HD Crush, Global Search |
 | Phase 3: Reports | Not Started | Disposition & Sanitization Certificates |
