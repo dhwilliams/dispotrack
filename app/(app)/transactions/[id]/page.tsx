@@ -1,9 +1,12 @@
+import Link from "next/link"
 import { notFound } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { PageHeader } from "@/components/layout/page-header"
 import { TransactionForm } from "@/components/forms/transaction-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Plus } from "lucide-react"
 import type { Transaction } from "@/lib/supabase/types"
 import { updateTransactionAction } from "@/app/(app)/transactions/actions"
 
@@ -61,7 +64,14 @@ export default async function TransactionDetailPage({
       <PageHeader
         title={(transaction as Transaction).transaction_number}
         description={`Created ${new Date((transaction as Transaction).created_at).toLocaleDateString()}`}
-      />
+      >
+        <Button asChild>
+          <Link href={`/assets/intake?transaction=${id}`}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Assets
+          </Link>
+        </Button>
+      </PageHeader>
 
       {totalAssets > 0 && (
         <Card>

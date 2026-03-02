@@ -142,22 +142,22 @@
 - [x] Validation: account number required and unique, name required
 - [x] Client dropdown should be reusable (used in Transaction form)
 
-### 1.2 — Transaction Management
-- [ ] Build `app/(app)/transactions/page.tsx` — Transaction list with filters (date range, customer)
-- [ ] Build `app/(app)/transactions/new/page.tsx` — Create transaction form:
+### 1.2 — Transaction Management ✅
+- [x] Build `app/(app)/transactions/page.tsx` — Transaction list with filters (date range, customer)
+- [x] Build `app/(app)/transactions/new/page.tsx` — Create transaction form:
   - Transaction number (auto-generated or manual entry)
   - Transaction date (date picker)
   - Customer (searchable dropdown from clients table, auto-populates acct num + address)
   - Customer cost center
   - Special instructions (textarea)
-- [ ] Build `app/(app)/transactions/[id]/page.tsx` — View transaction with list of associated assets
-- [ ] Server actions: createTransaction, updateTransaction
-- [ ] Validation: transaction number required and unique, client required
-- [ ] Show asset count and status summary on transaction detail page
+- [x] Build `app/(app)/transactions/[id]/page.tsx` — View transaction with list of associated assets
+- [x] Server actions: createTransaction, updateTransaction
+- [x] Validation: transaction number required and unique, client required
+- [x] Show asset count and status summary on transaction detail page
 
-### 1.3 — Initial Data Collection Form
-- [ ] Build `app/(app)/assets/intake/page.tsx` — the "Initial DC Form" equivalent
-- [ ] Form flow:
+### 1.3 — Initial Data Collection Form ✅
+- [x] Build `app/(app)/assets/intake/page.tsx` — the "Initial DC Form" equivalent
+- [x] Form flow:
   - Enter or select transaction number (auto-populates customer info)
   - Serialized/bulk toggle (RadioGroup: sets tracking_mode)
   - For each asset in the batch:
@@ -171,12 +171,12 @@
     - Weight (number, optional — for recycling/shipping)
     - Notes (textarea)
   - Submit button adds asset and clears form for next entry
-- [ ] Display internal_asset_id after creation (with copy button)
-- [ ] Show running list of assets entered for this transaction below the form
-- [ ] Quick-add mode: after submitting one asset, keep transaction context and clear only asset fields
-- [ ] Server action: createAssetWithInventory (creates asset + inventory record + journal receipt entry)
-- [ ] Evaluate routing rules on asset creation and display suggested disposition
-- [ ] Auto-log status history entry on creation
+- [x] Display internal_asset_id after creation (with copy button)
+- [x] Show running list of assets entered for this transaction below the form
+- [x] Quick-add mode: after submitting one asset, keep transaction context and clear only asset fields
+- [x] Server action: createAssetWithInventory (creates asset + inventory record + journal receipt entry)
+- [x] Evaluate routing rules on asset creation and display suggested disposition
+- [x] Auto-log status history entry on creation
 
 ### 1.4 — Asset Edit Form (Smart Tabbed)
 - [ ] Build `app/(app)/assets/[id]/edit/page.tsx` — Full asset edit form
@@ -489,7 +489,7 @@
 | Phase | Status | Notes |
 |-------|--------|-------|
 | Phase 0: Foundation | Complete | 0.1 ✅, 0.2 ✅, 0.2b ✅, 0.3 ✅, 0.4 ✅ |
-| Phase 1: Core Data Entry | In Progress | 1.1 ✅; 1.2 Transactions next |
+| Phase 1: Core Data Entry | In Progress | 1.1 ✅, 1.2 ✅, 1.3 ✅; 1.4 Asset Edit Form next |
 | Phase 2: Asset Processing | Not Started | Asset List (internal_asset_id, tracking_mode, bulk ops), Detail (photos, inventory, settlement), HD Crush (drive-level), Global Search (internal_asset_id, inventory) |
 | Phase 3: Reports | Not Started | Disposition, Sanitization (drive-level), Data Destruction, Recycling |
 | Phase 4: Dashboard, Admin & Analytics | Not Started | Dashboard + analytics, Admin (users, routing rules, field defs, buyers), Performance, A11y, Inventory Management |

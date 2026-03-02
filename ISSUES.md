@@ -49,3 +49,12 @@
 - `@supabase/postgrest-js` requires this property; without it, insert/update type parameters resolve to `never`, causing "No overload matches this call" errors
 - The `clients` table appeared to work in some contexts due to type inference fallbacks, but `client_revenue_terms` insert consistently failed
 - **Fix**: Added `Relationships: []` to all 17 table definitions in types.ts via script. This is a one-time fix that affects all future table operations.
+
+## Phase 1.3
+
+### Issue: Server action RSC refresh wipes client component state
+- Calling a server action via `startTransition` triggers an automatic RSC (React Server Components) refresh after execution
+- This remounts client components, resetting all `useState` values to their initial state
+- In the intake form, this meant the running list of created assets (`createdAssets` state) was wiped after each submission — adding a third asset would lose the first two
+- **Fix**: Replaced the server action with a route handler at `/api/assets/intake`. The intake form now calls `fetch('/api/assets/intake', { method: 'POST', body: formData })` which does NOT trigger an RSC refresh, preserving client state across submissions.
+- **Rule of thumb**: Use server actions for form submissions that redirect or revalidate. Use route handlers for mutations where you need to preserve client state (e.g., rapid multi-submit workflows like quick-add).

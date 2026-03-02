@@ -135,3 +135,40 @@
 - Used `useActionState` (React 19) for form submission state management instead of manual useState
 - Revenue term `term_details` JSONB structured differently per term_type: flat_fee={fee}, percentage={percentage, applies_to}, tiered={tiers[]}, threshold={threshold, below_rate, above_rate}
 - Client form used by both create and edit pages via prop-based action injection
+
+## Phase 1.2 — Transaction Management
+
+**What was done:**
+- Built transaction list page with filters: search by transaction number, date range (from/to), with Clear button
+- Built create transaction form with ClientSelect dropdown, auto-populated client address/contact info, date picker, special instructions textarea
+- Built transaction detail/edit page with asset summary section (count by status with color-coded badges, count by asset type)
+- Reusable TransactionForm component shared between create and edit pages
+- Server actions: createTransactionAction (auto-generates transaction number), updateTransactionAction
+- Transaction number auto-generated in `T{YYYYMMDD}.{sequence}` format (e.g., T20260302.00001), sequence padded to 5 digits
+- Asset counts fetched per transaction for list page badge display
+- `created_by` automatically set to authenticated user on create
+
+**Notable decisions:**
+- Transaction number is auto-generated only (no manual entry) — queries existing transactions for the date and increments. Read-only on edit.
+- Client address auto-populates via client-side fetch when ClientSelect value changes — keeps form responsive without server round-trips
+- Lint error for synchronous setState in useEffect: moved the null-clearing into the async function body to satisfy Next.js lint rules
+- Transaction detail page pre-built with asset status/type summary cards, ready for Phase 1.3 when assets start getting added to transactions
+
+## Phase 1.3 — Initial Data Collection Form
+
+**What was done:**
+- Built `app/(app)/assets/intake/page.tsx` — the asset intake form (replaces Caspio's "Initial DC Form")
+- Built `components/forms/intake-form.tsx` — full intake form with: transaction select, serialized/bulk radio toggle, barcode scanner inputs, asset type dropdown, manufacturer with datalist autocomplete, model, quantity, weight, notes
+- Built `components/shared/barcode-scanner.tsx` — USB scanner input handler (detects rapid keystrokes < 100ms apart vs manual typing, Enter triggers onScan)
+- Built `components/shared/internal-id-display.tsx` — monospace display of internal_asset_id with copy-to-clipboard button
+- Built `components/shared/transaction-select.tsx` — searchable dropdown showing transaction number + client name
+- Built `app/api/assets/intake/route.ts` — POST route handler: creates asset + inventory record (RECEIVING location) + inventory_journal receipt entry + asset_status_history entry, evaluates routing rules and returns suggested disposition
+- Quick-add mode: success banner shows internal_asset_id with copy button + routing suggestion, "Add Another" clears only asset fields and focuses serial input
+- Running table of all created assets below the form with internal ID, serial, type, manufacturer, model, suggested disposition
+- Added "Add Assets" button on transaction detail page linking to `/assets/intake?transaction={id}`
+- Quantity field locked to 1 in serialized mode, editable in bulk mode
+
+**Notable decisions:**
+- Used a route handler (`/api/assets/intake`) instead of a server action. Server actions trigger an automatic RSC refresh after execution, which remounts client components and wipes `useState`. The route handler approach with plain `fetch` keeps client state intact across multiple rapid submissions — critical for the quick-add workflow.
+- Manufacturer uses native HTML `datalist` for autocomplete (Dell, HP, Lenovo, Apple, etc.) — simpler than a full Command/Popover and works well for this use case
+- Routing rules evaluated server-side on each asset creation, result displayed in success banner and running table. No rules seeded yet so "suggested" column will show "—" until admin seeds routing rules.
