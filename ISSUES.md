@@ -41,3 +41,11 @@
 - Both files resolve to `/` because route groups like `(app)` don't add URL segments
 - Next.js would error or pick one unpredictably
 - **Fix**: Removed `app/page.tsx` entirely. The `(app)` group's `page.tsx` now serves `/` with the app shell layout.
+
+## Phase 1.1
+
+### Issue: Supabase insert/update operations resolve to `never` type
+- Hand-written `lib/supabase/types.ts` was missing `Relationships: []` on each table definition
+- `@supabase/postgrest-js` requires this property; without it, insert/update type parameters resolve to `never`, causing "No overload matches this call" errors
+- The `clients` table appeared to work in some contexts due to type inference fallbacks, but `client_revenue_terms` insert consistently failed
+- **Fix**: Added `Relationships: []` to all 17 table definitions in types.ts via script. This is a one-time fix that affects all future table operations.

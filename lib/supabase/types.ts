@@ -64,6 +64,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       transactions: {
         Row: {
@@ -96,6 +97,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       assets: {
         Row: {
@@ -176,6 +178,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       asset_hard_drives: {
         Row: {
@@ -229,6 +232,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       asset_grading: {
         Row: {
@@ -261,6 +265,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       asset_type_details: {
         Row: {
@@ -284,6 +289,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       asset_type_field_definitions: {
         Row: {
@@ -325,6 +331,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       asset_sanitization: {
         Row: {
@@ -369,6 +376,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       buyers: {
         Row: {
@@ -422,6 +430,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       asset_sales: {
         Row: {
@@ -502,6 +511,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       asset_status_history: {
         Row: {
@@ -534,6 +544,7 @@ export type Database = {
           changed_by?: string | null
           changed_at?: string
         }
+        Relationships: []
       }
       inventory: {
         Row: {
@@ -572,6 +583,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       inventory_journal: {
         Row: {
@@ -616,6 +628,7 @@ export type Database = {
           performed_by?: string | null
           performed_at?: string
         }
+        Relationships: []
       }
       client_revenue_terms: {
         Row: {
@@ -654,6 +667,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       asset_settlement: {
         Row: {
@@ -698,6 +712,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       routing_rules: {
         Row: {
@@ -736,6 +751,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       user_profiles: {
         Row: {
@@ -762,6 +778,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
     }
     Views: {

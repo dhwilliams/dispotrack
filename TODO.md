@@ -126,21 +126,21 @@
 
 > Goal: Build the forms for entering data — clients, transactions, and initial asset data collection. This is the primary data entry workflow Amber uses daily.
 
-### 1.1 — Client Management
-- [ ] Build `app/(app)/clients/page.tsx` — Client list with search
-- [ ] Build `app/(app)/clients/new/page.tsx` — Create client form:
+### 1.1 — Client Management ✅
+- [x] Build `app/(app)/clients/page.tsx` — Client list with search
+- [x] Build `app/(app)/clients/new/page.tsx` — Create client form:
   - Account number, name, cost center
   - Address (address1, address2, city, state dropdown, zip)
   - Contact name, email, phone
   - Notes
-- [ ] Build `app/(app)/clients/[id]/page.tsx` — View/edit client
-- [ ] Build revenue terms management section on client detail page:
+- [x] Build `app/(app)/clients/[id]/page.tsx` — View/edit client
+- [x] Build revenue terms management section on client detail page:
   - View active and historical revenue terms
   - Create new revenue term (flat_fee, percentage, tiered, threshold)
   - Set effective/expiration dates
-- [ ] Server actions: createClient, updateClient, createRevenueTerm, updateRevenueTerm
-- [ ] Validation: account number required and unique, name required
-- [ ] Client dropdown should be reusable (used in Transaction form)
+- [x] Server actions: createClient, updateClient, createRevenueTerm, updateRevenueTerm
+- [x] Validation: account number required and unique, name required
+- [x] Client dropdown should be reusable (used in Transaction form)
 
 ### 1.2 — Transaction Management
 - [ ] Build `app/(app)/transactions/page.tsx` — Transaction list with filters (date range, customer)
@@ -489,7 +489,7 @@
 | Phase | Status | Notes |
 |-------|--------|-------|
 | Phase 0: Foundation | Complete | 0.1 ✅, 0.2 ✅, 0.2b ✅, 0.3 ✅, 0.4 ✅ |
-| Phase 1: Core Data Entry | Not Started | Clients + revenue terms, Transactions, Asset Intake (barcode, serialized/bulk, inventory), Asset Edit (dynamic fields, drive-level sanitization, buyer select, photos) |
+| Phase 1: Core Data Entry | In Progress | 1.1 ✅; 1.2 Transactions next |
 | Phase 2: Asset Processing | Not Started | Asset List (internal_asset_id, tracking_mode, bulk ops), Detail (photos, inventory, settlement), HD Crush (drive-level), Global Search (internal_asset_id, inventory) |
 | Phase 3: Reports | Not Started | Disposition, Sanitization (drive-level), Data Destruction, Recycling |
 | Phase 4: Dashboard, Admin & Analytics | Not Started | Dashboard + analytics, Admin (users, routing rules, field defs, buyers), Performance, A11y, Inventory Management |

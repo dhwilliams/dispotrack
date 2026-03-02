@@ -116,3 +116,22 @@
 - User profile (role, name) fetched server-side in layout.tsx and passed as props to client sidebar/header components
 - Same `as` cast pattern for profile query as middleware (Supabase type narrowing issue)
 - Search trigger is a visual placeholder — Cmd+K command palette will be built in Phase 2.4
+
+## Phase 1.1 — Client Management
+
+**What was done:**
+- Built client list page with search by name/account number, table with account#, name, contact, location, cost center
+- Built create client form with sections: account info, address (US state dropdown), contact, notes
+- Built client detail/edit page with same form pre-populated, plus revenue terms section
+- Revenue terms section: table of active/historical terms with status badges, create dialog with dynamic fields per term type (flat_fee, percentage, tiered, threshold)
+- Server actions: createClient, updateClient (with unique account number validation, 23505 constraint error handling), createRevenueTerm, updateRevenueTerm
+- Reusable `ClientSelect` dropdown component (searchable, uses Command/Popover, ready for Transaction form)
+- Reusable `ClientForm` component shared between create and edit pages
+- US states constant for state dropdown
+- Seed data script with 10 realistic clients across MS/TN/AL/LA
+
+**Notable decisions:**
+- Added `Relationships: []` to all 17 table definitions in types.ts — required by `@supabase/postgrest-js` for type-safe insert/update operations. Without it, insert types resolved to `never`.
+- Used `useActionState` (React 19) for form submission state management instead of manual useState
+- Revenue term `term_details` JSONB structured differently per term_type: flat_fee={fee}, percentage={percentage, applies_to}, tiered={tiers[]}, threshold={threshold, below_rate, above_rate}
+- Client form used by both create and edit pages via prop-based action injection
