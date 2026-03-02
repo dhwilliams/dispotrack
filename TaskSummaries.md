@@ -45,3 +45,30 @@
 - Type-specific fields use JSONB in asset_type_details (flexible for laptop/printer/phone differences)
 - Migrations run manually via Supabase SQL Editor (not CLI) since user manages Supabase project directly
 - Service role key used in verification script to bypass RLS
+
+## Phase 0.2b — Schema v2 Migration
+
+**What was done:**
+- Wrote `supabase/migrations/00003_schema_v2.sql`:
+  - ALTER `assets`: nullable serial_number, added internal_asset_id (SEQUENCE + trigger, format LR3-000001), serial_generated, tracking_mode (serialized/bulk), unit_of_measure, weight
+  - ALTER `asset_hard_drives`: 7 new sanitization columns (method, details, wipe_verification, validation, tech, date) + updated_at
+  - Migrated `asset_hardware` data → `asset_type_details` JSONB using jsonb_strip_nulls(), then DROP TABLE
+  - ALTER `asset_sales`: added buyer_id FK
+  - Created 7 new tables: buyers, inventory, inventory_journal, asset_type_field_definitions, client_revenue_terms, asset_settlement, routing_rules
+  - Seeded 46 field definitions across all 9 asset types
+  - ALTER `user_profiles` role CHECK: added receiving_tech, client_portal_user
+- Wrote `supabase/migrations/00004_schema_v2_rls.sql`:
+  - RLS enabled on all 7 new tables
+  - 4 new helper functions: can_create_assets(), is_client_portal_user(), is_internal_user(), updated is_operator_or_admin()
+  - Updated 9 existing insert policies to include receiving_tech via can_create_assets()
+  - inventory_journal: append-only (no UPDATE policy, DELETE admin-only)
+  - 20 new indexes across all new tables + new columns
+- Updated `lib/supabase/types.ts` with full v2 types (17 tables, 6 functions, new enums)
+- Wrote `scripts/verify-migration-v2.ts` — 49/49 checks passed
+- Updated all 7 documentation files (api-architect, workflow-expert, ui-builder, CLAUDE.md, TODO.md, PROMPTS.md, database-schema.md) for v2 consistency
+
+**Notable decisions:**
+- Used PostgreSQL SEQUENCE for internal_asset_id instead of MAX()+1 to avoid race conditions under concurrent inserts
+- Used jsonb_strip_nulls() for asset_hardware → asset_type_details migration (original ARRAY subtraction syntax caused parse errors)
+- PostgREST HEAD-only count queries don't reliably detect dropped tables through schema cache; switched to column-specific queries in verification script
+- After DDL changes, must run `NOTIFY pgrst, 'reload schema'` in Supabase SQL Editor to refresh PostgREST cache

@@ -27,7 +27,7 @@
 - [x] Add `.env.local` to `.gitignore`
 - [x] Initialize git repo and make initial commit
 
-### 0.2 — Set Up Supabase ✅
+### 0.2 — Set Up Supabase (v1 Schema) ✅
 - [x] Create Supabase project (via dashboard)
 - [x] Run full database schema migration (`supabase/migrations/00001_initial_schema.sql`):
   - [x] `clients` table (account_number, name, cost_center, address fields, contact info, external_reference_id)
@@ -52,6 +52,42 @@
 - [x] Add real Supabase URL and anon key to `.env.local`
 - [x] Verification script passed: 47/47 checks (tables, indexes, RLS, functions, insert/select round-trip with joins)
 
+### 0.2b — Schema v2 Migration ✅
+- [x] Write `supabase/migrations/00003_schema_v2.sql`:
+  - [x] ALTER `assets` table:
+    - Add `internal_asset_id TEXT NOT NULL UNIQUE` (auto-generated via trigger)
+    - Add `serial_generated BOOLEAN NOT NULL DEFAULT false`
+    - Add `tracking_mode TEXT NOT NULL DEFAULT 'serialized'` with CHECK
+    - Add `unit_of_measure TEXT DEFAULT 'EA'`
+    - Add `weight NUMERIC(10,2)`
+    - ALTER `serial_number` to nullable (DROP NOT NULL)
+  - [x] Create `generate_internal_asset_id()` trigger function
+  - [x] ALTER `asset_hard_drives` — add sanitization columns:
+    - `sanitization_method`, `sanitization_details`, `wipe_verification_method`
+    - `sanitization_validation`, `sanitization_tech`, `sanitization_date`
+    - `updated_at TIMESTAMPTZ DEFAULT now()`
+  - [x] DROP `asset_hardware` table (migrate data to `asset_type_details` first):
+    - INSERT into `asset_type_details` from `asset_hardware` for all existing rows
+    - Then DROP TABLE
+  - [x] ALTER `asset_sales` — add `buyer_id UUID REFERENCES buyers(id)`
+  - [x] CREATE `inventory` table (asset_id FK, part_number, description, location, quantity_on_hand, unit_of_measure, status)
+  - [x] CREATE `inventory_journal` table (inventory_id FK, asset_id FK, transaction_id FK, movement_type, quantity, from/to location, reference_number, reason, performed_by, performed_at)
+  - [x] CREATE `asset_type_field_definitions` table (asset_type, field_name, field_label, field_type, field_options, field_group, is_required, sort_order) with seed data for all 9 asset types
+  - [x] CREATE `buyers` table (name, address, contact, ebay_name, email, notes)
+  - [x] CREATE `client_revenue_terms` table (client_id FK, term_type, term_details JSONB, effective/expiration dates)
+  - [x] CREATE `asset_settlement` table (asset_id FK, sale_id FK, revenue_term_id FK, amounts, settlement_date, settled flag)
+  - [x] CREATE `routing_rules` table (name, description, priority, conditions JSONB, action, is_active)
+  - [x] ALTER `user_profiles` role CHECK — add `'receiving_tech'`, `'client_portal_user'`
+- [x] Write `supabase/migrations/00004_schema_v2_rls.sql`:
+  - [x] RLS policies for all new tables (inventory, inventory_journal, buyers, client_revenue_terms, asset_settlement, routing_rules, asset_type_field_definitions)
+  - [x] Updated RLS for client_portal_user role (restricted to own client's data)
+  - [x] New indexes for all new tables
+  - [x] Inventory journal: append-only (no UPDATE/DELETE for any role)
+- [x] Run migrations in Supabase SQL Editor
+- [x] Regenerate TypeScript types (`lib/supabase/types.ts`)
+- [x] Update `docs/database-schema.md` to reflect v2
+- [x] Run verification script (extend for new tables) — 49/49 checks passed
+
 ### 0.3 — Set Up Auth
 - [ ] Configure Supabase Auth for email/password (disable self-signup)
 - [ ] Create Supabase client helpers:
@@ -59,6 +95,7 @@
   - [ ] `lib/supabase/server.ts` (server component client)
   - [ ] `lib/supabase/middleware.ts` (auth middleware)
 - [ ] Create middleware to protect all routes except `/login`
+- [ ] Add role-based route protection: admin routes, receiving_tech restrictions, client_portal_user restrictions
 - [ ] Build login page (`app/(auth)/login/page.tsx`)
 - [ ] Build auth callback route (`app/(auth)/callback/route.ts`)
 - [ ] Create user_profiles trigger (auto-create profile on auth.users insert)
@@ -72,6 +109,7 @@
   - Transactions
   - Assets
   - Clients
+  - Inventory
   - HD Crush
   - Reports
   - Admin (admin only)
@@ -96,7 +134,11 @@
   - Contact name, email, phone
   - Notes
 - [ ] Build `app/(app)/clients/[id]/page.tsx` — View/edit client
-- [ ] Server actions: createClient, updateClient
+- [ ] Build revenue terms management section on client detail page:
+  - View active and historical revenue terms
+  - Create new revenue term (flat_fee, percentage, tiered, threshold)
+  - Set effective/expiration dates
+- [ ] Server actions: createClient, updateClient, createRevenueTerm, updateRevenueTerm
 - [ ] Validation: account number required and unique, name required
 - [ ] Client dropdown should be reusable (used in Transaction form)
 
@@ -117,40 +159,41 @@
 - [ ] Build `app/(app)/assets/intake/page.tsx` — the "Initial DC Form" equivalent
 - [ ] Form flow:
   - Enter or select transaction number (auto-populates customer info)
+  - Serialized/bulk toggle (RadioGroup: sets tracking_mode)
   - For each asset in the batch:
-    - Asset serial number (required)
+    - Asset serial number (optional — internal_asset_id auto-assigned by DB)
+    - Barcode scanner input for serial numbers and asset tags (USB scanner + manual entry)
     - Asset type (required — dropdown: Desktop, Server, Laptop, Monitor, Printer, Phone, TV, Network, Other)
     - Manufacturer (searchable dropdown with common values: Dell, HP, Lenovo, Apple, etc.)
     - MFG Model Number (text)
     - Asset tag (text)
-    - Quantity (number, default 1)
+    - Quantity (number, default 1 — editable for bulk mode)
+    - Weight (number, optional — for recycling/shipping)
     - Notes (textarea)
   - Submit button adds asset and clears form for next entry
+- [ ] Display internal_asset_id after creation (with copy button)
 - [ ] Show running list of assets entered for this transaction below the form
 - [ ] Quick-add mode: after submitting one asset, keep transaction context and clear only asset fields
-- [ ] Server action: createAsset (sets initial status to `received`)
+- [ ] Server action: createAssetWithInventory (creates asset + inventory record + journal receipt entry)
+- [ ] Evaluate routing rules on asset creation and display suggested disposition
 - [ ] Auto-log status history entry on creation
 
 ### 1.4 — Asset Edit Form (Smart Tabbed)
 - [ ] Build `app/(app)/assets/[id]/edit/page.tsx` — Full asset edit form
+- [ ] Display `internal_asset_id` prominently at top (read-only, with copy + optional label print button)
 - [ ] Tab structure that adapts to asset type:
-  - **Product Info** (always shown): Serial, type, manufacturer, model, model name, part#, asset tag, qty, notes
-  - **Hardware** (Desktop/Server/Laptop): CPU info, memory, optical drive, hard drives (dynamic list — add/remove), chassis type, color
+  - **Product Info** (always shown): Serial, type, manufacturer, model, model name, part#, asset tag, qty, tracking mode, weight, notes
+  - **Hardware** (dynamic from field definitions): Renders fields from `asset_type_field_definitions` where `field_group = 'hardware'`. Includes hard drives (dynamic add/remove rows with per-drive sanitization fields).
   - **Testing** (always shown): Cosmetic category dropdown (C1-C5), functioning category dropdown (F1-F5), powers up Y/N, functions properly Y/N
-  - **Type-Specific** (conditional):
-    - Laptop: battery held 30min, has battery, webcam, screen program, keyboard works, screen size, screen condition, AC adapter
-    - Printer: type, sheet tray, duplexer, page count, laser/inkjet, toner, wireless, serial cable, ports
-    - Phone: receiver Y/N, cord Y/N, cordless Y/N
-    - TV: television type, screen size
-    - Network: WiFi, half/full rack, ports
-    - Monitor: screen size, screen condition
+  - **Type-Specific** (conditional, dynamic from field definitions): Renders fields from `asset_type_field_definitions` where `field_group = 'type_specific'`. Only shows if the asset type has type-specific fields defined.
   - **Status** (always shown): Bin location, asset destination dropdown, available for sale Y/N, reason for change dropdown, explanation
-  - **Sanitization** (always shown): Method dropdown (Wipe/Destruct-Shred/Clear-Overwrite/None), details, verification method, HD validation, validator, dates, inspection tech
-  - **Sales** (shown when destination is External Reuse or Available for Sale): LogistaSO, customer PO, sold to (full address block), eBay info, sale price, sold date, shipping info
+  - **Sanitization** (always shown): Device-level method dropdown + notes. Drive-level sanitization is on each drive row in Hardware tab.
+  - **Sales** (shown when destination is External Reuse or Available for Sale): Buyer select (searchable from buyers table, with "New Buyer" quick-add), LogistaSO, customer PO, inline sold-to fields (auto-fill from buyer), eBay info, sale price, sold date, shipping info
+  - **Photos** (always shown): Photo upload (drag-and-drop or click), photo gallery, delete photos
   - **History** (always shown, read-only): Timeline of all status changes from asset_status_history
-- [ ] Hard drive section: dynamic rows (add/remove), not fixed 24 slots
+- [ ] Hard drive section: dynamic rows (add/remove), each row includes sanitization fields (method, date, tech, validation)
 - [ ] Reason for change required when modifying status fields
-- [ ] Server actions: updateAsset, addHardDrive, removeHardDrive, updateSanitization, updateSales
+- [ ] Server actions: updateAsset, addHardDrive, removeHardDrive, updateDriveSanitization, updateDeviceSanitization, updateSales
 - [ ] Every status change logged to asset_status_history automatically
 - [ ] "Save" button at bottom of form (saves all tabs at once)
 
@@ -163,17 +206,19 @@
 ### 2.1 — Asset List & Search
 - [ ] Build `app/(app)/assets/page.tsx` — Asset listing page (the main report view)
 - [ ] Data table with columns matching Caspio report:
-  - Transaction Date, Transaction Number, Customer Cost Center, Customer Name
+  - Internal Asset ID, Transaction Date, Transaction Number, Customer Cost Center, Customer Name
   - Asset Type, Description, MFG, MFG Model, Asset Serial Number, Asset Tag
-  - Qty, Notes, Available for Sale, Asset Destination
+  - Qty, Tracking Mode, Notes, Available for Sale, Asset Destination
   - Status (color-coded badge)
 - [ ] Implement filters:
   - [ ] Transaction number (text search)
   - [ ] Transaction date range (date pickers)
   - [ ] Customer name (dropdown)
   - [ ] Customer cost center (dropdown)
+  - [ ] Internal asset ID (text search)
   - [ ] Asset serial number (text search)
   - [ ] Asset type (dropdown)
+  - [ ] Tracking mode (dropdown: serialized/bulk)
   - [ ] Manufacturer (dropdown)
   - [ ] MFG Model (text search)
   - [ ] Asset tag (text search)
@@ -188,31 +233,39 @@
 - [ ] Store filter state in URL search params (shareable/bookmarkable)
 - [ ] "Download Data" export button (CSV)
 - [ ] Click row → navigate to asset detail/edit page
-- [ ] Bulk select with checkboxes (for future bulk operations)
+- [ ] Bulk select with checkboxes for bulk operations (batch status update, batch destination change)
 - [ ] Loading states with skeleton components
 
 ### 2.2 — Asset Detail View
 - [ ] Build `app/(app)/assets/[id]/page.tsx` — Read-only detail view
+- [ ] Display `internal_asset_id` prominently at top with copy button
 - [ ] Same tabbed layout as edit form but read-only display
 - [ ] "Edit" button → navigates to edit page
 - [ ] Show full transaction context (customer info, special instructions)
-- [ ] Show hard drives in a clean table (not 24 empty rows)
+- [ ] Show hard drives in a clean table (not 24 empty rows) with per-drive sanitization status
+- [ ] Show photos gallery
+- [ ] Show inventory position (current location, quantity, journal history)
+- [ ] Show settlement info if sold (sale amount, client share, logista share)
 - [ ] Show status history timeline with who/when/what
 
 ### 2.3 — HD Crush Workflow
 - [ ] Build `app/(app)/hd-crush/page.tsx`
 - [ ] Step 1: Search by hard drive serial number
-- [ ] Step 2: Display matching asset with key info (serial, type, customer, transaction)
-- [ ] Step 3: Show hard drive details, select sanitization method (Destruct/Shred)
+- [ ] Step 2: Display matching asset with key info (internal_asset_id, serial, type, customer, transaction)
+- [ ] Step 3: Show hard drive details with drive-level sanitization fields:
+  - Sanitization method (Destruct/Shred)
+  - Crush date
+  - Sanitization tech
+  - Validation status
 - [ ] Step 4: Enter crush date, confirm
-- [ ] On submit: update hard drive's date_crushed, update asset's sanitization record
-- [ ] If all hard drives in asset are crushed, auto-update asset sanitization status
+- [ ] On submit: update drive-level sanitization fields on `asset_hard_drives` row
+- [ ] If all hard drives in asset are sanitized, auto-update device-level sanitization status
 - [ ] Show "Details" and "Edit" links to parent asset
 
 ### 2.4 — Global Search
-- [ ] Build `app/api/search/route.ts` — search across assets (serial, model), transactions (number), clients (name, account)
+- [ ] Build `app/api/search/route.ts` — search across assets (serial_number + internal_asset_id + model), transactions (number), clients (name, account), inventory (location, part)
 - [ ] Build Command palette component (Cmd+K trigger)
-- [ ] Search results grouped by type (Assets, Transactions, Clients)
+- [ ] Search results grouped by type (Assets, Transactions, Clients, Inventory)
 - [ ] Click result → navigate to detail page
 - [ ] Keyboard navigation within results
 - [ ] Debounced input (300ms)
@@ -221,7 +274,7 @@
 
 ## Phase 3: Reports & Certificates
 
-> Goal: Build the two critical audit reports — Certificate of Disposition and Certificate of Sanitization. These must look professional and match Logista's branding.
+> Goal: Build the audit reports — Certificate of Disposition, Certificate of Sanitization, Certificate of Data Destruction, and Certificate of Recycling. These must look professional and match Logista's branding.
 
 ### 3.1 — Certificate of Disposition
 - [ ] Build `app/(app)/reports/disposition/page.tsx` — Search/generate form
@@ -252,24 +305,55 @@
   - Transaction number
   - Customer name and address
   - Certification text: "Logista hereby certifies that all information in the form of magnetic media, disks, hard drives, tapes, diskettes or compact disks specified in the equipment list attached have been completely sanitized and/or destroyed in accordance with the NIST 800-88 standard. This action was performed at Logista Solutions, 401 Yorkville Rd E, Columbus, MS."
-  - Asset table: Asset SN, Asset Type, Description, MFG, MFG Model, Hard Drive SN, Sanitization Method
-  - Only show assets that have hard drives / sanitization records
+  - Asset table: Asset SN, Asset Type, Description, MFG, MFG Model, Hard Drive SN, Sanitization Method, Sanitization Date
+  - Drive-level sanitization: query `asset_hard_drives` for per-drive method/date (not just device-level `asset_sanitization`)
+  - Only show assets that have drives with sanitization records or device-level sanitization
 - [ ] Same print CSS treatment as disposition report
 - [ ] "Print" and "Download Data" buttons
 
 ### 3.3 — Reports Hub
 - [ ] Build `app/(app)/reports/page.tsx` — Reports landing page
-- [ ] Cards for each report type with description and quick-search
+- [ ] Cards for each report type with description and quick-search:
+  - Certificate of Disposition
+  - Certificate of Sanitization
+  - Certificate of Data Destruction
+  - Certificate of Recycling
 - [ ] Recent reports generated (stored in local storage or session)
 - [ ] Quick link: Enter transaction number → choose which report to generate
 
+### 3.4 — Certificate of Data Destruction
+- [ ] Build `app/(app)/reports/destruction/page.tsx` — Search/generate form
+- [ ] Input: Transaction number (search and select)
+- [ ] Generate report that includes:
+  - Logista logo (top right)
+  - "Certificate of Data Destruction" title
+  - Date generated, transaction number, customer name and address
+  - Certification text referencing physical media destruction per NIST 800-88
+  - Asset table: Asset SN, Asset Type, MFG, MFG Model, Hard Drive SN, Crush Date
+  - Only show assets where drives were physically destroyed (sanitization_method = 'destruct_shred')
+- [ ] Same print CSS treatment
+- [ ] "Print" and "Download Data" buttons
+
+### 3.5 — Certificate of Recycling
+- [ ] Build `app/(app)/reports/recycling/page.tsx` — Search/generate form
+- [ ] Input: Transaction number (search and select)
+- [ ] Generate report that includes:
+  - Logista logo (top right)
+  - "Certificate of Recycling" title
+  - Date generated, transaction number, customer name and address
+  - Certification text referencing responsible recycling per applicable regulations
+  - Asset table: Asset Type, Description, Asset SN, MFG, MFG Model, Weight
+  - Only show assets with destination = 'recycle'
+- [ ] Same print CSS treatment
+- [ ] "Print" and "Download Data" buttons
+
 ---
 
-## Phase 4: Dashboard & Polish
+## Phase 4: Dashboard, Admin & Analytics
 
-> Goal: Build a useful dashboard, add quality-of-life features, and harden the app for daily use.
+> Goal: Build a useful dashboard, admin panel with expanded configuration, analytics, and inventory management.
 
-### 4.1 — Dashboard
+### 4.1 — Dashboard & Analytics
 - [ ] Build dashboard (`app/(app)/page.tsx`) with live stats:
   - Total assets (by status breakdown)
   - Assets received this week/month
@@ -277,15 +361,35 @@
   - Assets available for sale
   - Recent transactions (last 10, linked to detail)
   - Assets by type (pie/bar chart or count cards)
+  - Inventory summary (total items on hand, by location)
 - [ ] Quick action cards: New Transaction, Asset Intake, HD Crush, Generate Report
 - [ ] Welcome message with user name and role
+- [ ] Analytics section:
+  - Asset volume trends (received/processed over time)
+  - Processing time metrics (average time from received to available)
+  - Revenue from resales (if settlement data exists)
+  - Top customers by volume
 - [ ] Loading skeleton
 
 ### 4.2 — Admin Panel
-- [ ] Build `app/(app)/admin/page.tsx` — User management
-- [ ] Create user (via `supabase.auth.admin.createUser()` with service-role client)
-- [ ] Edit user role (admin/operator/viewer)
-- [ ] Deactivate user
+- [ ] Build `app/(app)/admin/page.tsx` — Admin hub with tabs/sections
+- [ ] **User Management**:
+  - Create user (via `supabase.auth.admin.createUser()` with service-role client)
+  - Edit user role (admin/operator/viewer/receiving_tech/client_portal_user)
+  - Deactivate user
+- [ ] **Routing Rules Management**:
+  - List active/inactive routing rules with priority order
+  - Create/edit/delete routing rules (name, conditions JSONB editor, action, priority)
+  - Toggle active/inactive
+  - Test a rule against sample asset data
+- [ ] **Asset Type Field Definitions Management**:
+  - List field definitions grouped by asset type
+  - Create/edit/delete field definitions (field_name, label, type, options, group, required, sort_order)
+  - Preview how fields will render in the asset form
+- [ ] **Buyer Management**:
+  - List buyers with search
+  - Create/edit buyer (name, address, contact, eBay name)
+  - View sales history per buyer
 - [ ] Admin-only route protection (layout + middleware)
 
 ### 4.3 — Performance & UX
@@ -300,6 +404,21 @@
 - [ ] Keyboard navigation audit (Tab, Escape, Enter)
 - [ ] Color contrast check on status badges and grading indicators
 - [ ] ARIA labels on icon-only buttons and custom controls
+
+### 4.5 — Inventory Management
+- [ ] Build `app/(app)/inventory/page.tsx` — Stock on hand view
+  - Table: location, part/description, quantity on hand, unit of measure, status, linked asset
+  - Filters: location, status, part number, asset type
+  - Search by location or part
+- [ ] Build `app/(app)/inventory/journal/page.tsx` — Journal viewer
+  - Table: date, movement type, quantity, from/to location, reference, performed by, reason
+  - Filters: movement type, date range, location, reference number
+  - Read-only (append-only journal — no edits)
+- [ ] Build inventory actions:
+  - Transfer stock (move between locations)
+  - Adjust stock (correction via reversal + new entry)
+  - Split batch (issue out bulk + receive in sub-batches)
+- [ ] Inventory summary on dashboard
 
 ---
 
@@ -322,14 +441,18 @@
 - [ ] Verify auth flow works in production
 - [ ] Test all features end-to-end in production
 
-### 5.3 — Data Migration Strategy
+### 5.3 — Data Migration
 - [ ] Document Caspio data export process (CSV export from Download/Edit Asset Report)
 - [ ] Create `scripts/import-caspio-data.ts` migration script:
-  - [ ] Map Caspio columns to DispoTrack schema
+  - [ ] Map Caspio columns to DispoTrack v2 schema
   - [ ] Handle the flat hard drive columns (HardDrive1SN through HardDrive24Serial → normalized rows)
   - [ ] Import clients from transaction data
   - [ ] Import transactions
   - [ ] Import assets with all related data
+- [ ] Generate `internal_asset_id` for all imported assets (trigger handles this)
+- [ ] Create inventory + journal records for all imported assets (receipt entries)
+- [ ] Migrate `asset_hardware` data to `asset_type_details` JSONB (CPU, memory, chassis, optical drive, color → details JSON)
+- [ ] Migrate device-level sanitization to drive-level where drives exist (copy `asset_sanitization` fields to matching `asset_hard_drives` rows)
 - [ ] Test migration with a sample export
 - [ ] Plan for running both systems in parallel until April audit
 
@@ -342,17 +465,22 @@
 - [ ] **BIOS Capture Automation** — Integrate with device to auto-populate CPU, memory, HD info
 - [ ] **Camera/AI Asset Scanning** — Take photo of label → AI extracts serial, model, manufacturer
 - [ ] **X-Erase Import** — Import wipe results directly from X-Erase software
-- [ ] **Depot/Sage Integration** — Connect asset lifecycle to Sage warehouse management
-- [ ] **Bulk Operations** — Batch update status, destination, or sanitization for selected assets
-- [ ] **Barcode/QR Scanning** — Scan asset tags and serial numbers via camera or USB scanner
+- [ ] **Depot/Sage Integration** — Connect asset lifecycle to Sage warehouse management (STOCK/STOJOU sync)
 - [ ] **Email Notifications** — Alert when transaction is complete, certificates are ready
-- [ ] **Asset Images** — Attach photos to asset records
 - [ ] **Audit Log Dashboard** — Admin view of all changes across the system
 - [ ] **Custom Report Builder** — Ad-hoc queries and report generation
-- [ ] **Mobile/Tablet Optimization** — Full mobile support for warehouse floor use
 - [ ] **PDF Export** — Generate downloadable PDFs for certificates (currently HTML+print)
 - [ ] **Recurring Customers** — Quick-fill from previous transactions for repeat customers
-- [ ] **Analytics** — Asset volume trends, processing time metrics, revenue from resales
+- [ ] **Client Settlement Statement** — Revenue share report per client for a date range
+- [ ] **R2v3 Audit Report** — Compliance report aligned with R2v3 standard
+- [ ] **Aging & Workflow Alerts** — Notifications for assets stuck in a status too long
+- [ ] **Mobile Receiving Interface** — Simplified intake form optimized for mobile/tablet on warehouse floor
+- [ ] **Expanded Reporting Dashboard** — Trend charts, KPIs, exportable summary reports
+- [ ] **Shipping & Label Generation** — Generate shipping labels and packing lists from sale records
+- [ ] **Client Portal** — External read-only access for clients to view their own assets/certificates/settlements
+- [ ] **Asset Price Book** — Default pricing by asset type, grade, age for quick sale pricing
+- [ ] **eBay Draft Listing** — Pre-populate eBay listing templates from asset data
+- [ ] **Physical Chain of Custody Log** — Track who physically handled an asset at each workflow step
 
 ---
 
@@ -360,9 +488,9 @@
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| Phase 0: Foundation | In Progress | 0.1 ✅, 0.2 ✅; 0.3 Auth next |
-| Phase 1: Core Data Entry | Not Started | Clients, Transactions, Asset Intake, Asset Edit |
-| Phase 2: Asset Processing | Not Started | Asset List, HD Crush, Global Search |
-| Phase 3: Reports | Not Started | Disposition & Sanitization Certificates |
-| Phase 4: Dashboard & Polish | Not Started | Dashboard, Admin, Performance, A11y |
-| Phase 5: Deploy & Migration | Not Started | Vercel, Production, Caspio Data Migration |
+| Phase 0: Foundation | In Progress | 0.1 ✅, 0.2 ✅, 0.2b ✅; 0.3 Auth next |
+| Phase 1: Core Data Entry | Not Started | Clients + revenue terms, Transactions, Asset Intake (barcode, serialized/bulk, inventory), Asset Edit (dynamic fields, drive-level sanitization, buyer select, photos) |
+| Phase 2: Asset Processing | Not Started | Asset List (internal_asset_id, tracking_mode, bulk ops), Detail (photos, inventory, settlement), HD Crush (drive-level), Global Search (internal_asset_id, inventory) |
+| Phase 3: Reports | Not Started | Disposition, Sanitization (drive-level), Data Destruction, Recycling |
+| Phase 4: Dashboard, Admin & Analytics | Not Started | Dashboard + analytics, Admin (users, routing rules, field defs, buyers), Performance, A11y, Inventory Management |
+| Phase 5: Deploy & Migration | Not Started | Vercel, Production, Caspio Data Migration (internal_asset_ids, inventory records, asset_hardware → JSONB, drive-level sanitization) |
