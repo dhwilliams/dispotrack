@@ -98,3 +98,21 @@
 - Route group `(auth)` means callback is at `/callback` not `/auth/callback` — middleware updated to match
 - Role query in middleware uses `as` cast because Supabase `.select("role").single()` returns `never` type when Database generic doesn't narrow through middleware context
 - Admin seed script is idempotent — re-running just ensures role is admin
+
+## Phase 0.4 — App Shell & Layout
+
+**What was done:**
+- Created `components/layout/sidebar.tsx`: dark sidebar with 8 nav links (Dashboard, Transactions, Assets, Clients, Inventory, HD Crush, Reports, Admin), Admin conditionally shown for admin role, active state highlighting, lucide-react icons
+- Created `components/layout/header.tsx`: search trigger button with Cmd+K shortcut badge, user menu dropdown with avatar, name, role badge, sign out
+- Created `components/layout/page-header.tsx`: reusable page title + description + actions slot
+- Created `app/(app)/layout.tsx`: app shell fetches user profile server-side, renders sidebar + header + scrollable main content
+- Created dashboard page (`app/(app)/page.tsx`) with 4 placeholder stat cards (Total Assets, Open Transactions, Active Clients, In Inventory) and Recent Activity card
+- Created 7 placeholder pages: transactions, assets, clients, inventory, hd-crush, reports, admin — each with PageHeader and phase reference
+- Removed `app/page.tsx` to avoid route conflict with `app/(app)/page.tsx` (both resolve to `/`)
+
+**Notable decisions:**
+- Route group `(app)` wraps all authenticated pages, providing the sidebar/header layout. `(auth)` group has no layout shell.
+- Removed root `app/page.tsx` since `app/(app)/page.tsx` also resolves to `/` — Next.js route groups don't add URL segments
+- User profile (role, name) fetched server-side in layout.tsx and passed as props to client sidebar/header components
+- Same `as` cast pattern for profile query as middleware (Supabase type narrowing issue)
+- Search trigger is a visual placeholder — Cmd+K command palette will be built in Phase 2.4

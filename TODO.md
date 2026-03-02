@@ -102,9 +102,9 @@
 - [x] Seed admin user — `scripts/seed-admin.ts` (admin@logistasolutions.com)
 - [x] Test: can log in, access protected page, get redirected when logged out
 
-### 0.4 — App Shell & Layout
-- [ ] Create app shell layout with sidebar navigation and header (`app/(app)/layout.tsx`)
-- [ ] Build sidebar component with nav links:
+### 0.4 — App Shell & Layout ✅
+- [x] Create app shell layout with sidebar navigation and header (`app/(app)/layout.tsx`)
+- [x] Build sidebar component with nav links:
   - Dashboard
   - Transactions
   - Assets
@@ -113,12 +113,12 @@
   - HD Crush
   - Reports
   - Admin (admin only)
-- [ ] Build header component with:
+- [x] Build header component with:
   - Global search trigger (Cmd+K)
   - User menu (name, role badge, logout)
-- [ ] Create placeholder pages for each route (just titles for now)
-- [ ] Build a simple dashboard page with placeholder stats cards
-- [ ] Verify navigation works across all routes
+- [x] Create placeholder pages for each route (just titles for now)
+- [x] Build a simple dashboard page with placeholder stats cards
+- [x] Verify navigation works across all routes
 
 ---
 
@@ -488,7 +488,7 @@
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| Phase 0: Foundation | In Progress | 0.1 ✅, 0.2 ✅, 0.2b ✅, 0.3 ✅; 0.4 App Shell next |
+| Phase 0: Foundation | Complete | 0.1 ✅, 0.2 ✅, 0.2b ✅, 0.3 ✅, 0.4 ✅ |
 | Phase 1: Core Data Entry | Not Started | Clients + revenue terms, Transactions, Asset Intake (barcode, serialized/bulk, inventory), Asset Edit (dynamic fields, drive-level sanitization, buyer select, photos) |
 | Phase 2: Asset Processing | Not Started | Asset List (internal_asset_id, tracking_mode, bulk ops), Detail (photos, inventory, settlement), HD Crush (drive-level), Global Search (internal_asset_id, inventory) |
 | Phase 3: Reports | Not Started | Disposition, Sanitization (drive-level), Data Destruction, Recycling |

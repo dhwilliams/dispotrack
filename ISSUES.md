@@ -34,3 +34,10 @@
 - `app/(auth)/callback/route.ts` serves at `/callback`, not `/auth/callback`
 - Middleware was checking `pathname.startsWith("/auth/callback")` which never matched
 - **Fix**: Updated middleware to check `/callback` and `/auth/` prefixes separately
+
+## Phase 0.4
+
+### Issue: Route conflict between `app/page.tsx` and `app/(app)/page.tsx`
+- Both files resolve to `/` because route groups like `(app)` don't add URL segments
+- Next.js would error or pick one unpredictably
+- **Fix**: Removed `app/page.tsx` entirely. The `(app)` group's `page.tsx` now serves `/` with the app shell layout.
