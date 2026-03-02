@@ -72,3 +72,29 @@
 - Used jsonb_strip_nulls() for asset_hardware → asset_type_details migration (original ARRAY subtraction syntax caused parse errors)
 - PostgREST HEAD-only count queries don't reliably detect dropped tables through schema cache; switched to column-specific queries in verification script
 - After DDL changes, must run `NOTIFY pgrst, 'reload schema'` in Supabase SQL Editor to refresh PostgREST cache
+
+## Phase 0.3 — Set Up Auth
+
+**What was done:**
+- Created Supabase client helpers:
+  - `lib/supabase/client.ts`: Browser client using `createBrowserClient` from `@supabase/ssr`
+  - `lib/supabase/server.ts`: Server component client using `createServerClient` with async `cookies()`
+  - `lib/supabase/middleware.ts`: Middleware helper with session refresh, auth redirects, role-based route protection
+- Created `middleware.ts` at project root matching all routes except static assets
+- Auth protection: unauthenticated users redirected to `/login`, logged-in users on `/login` redirected to `/`
+- Role-based routing: `/admin/*` restricted to admin role, `client_portal_user` restricted to `/portal` and `/reports`
+- Built login page (`app/(auth)/login/page.tsx`): email/password form, shadcn Card/Input/Button, error display, no signup
+- Built auth callback route (`app/(auth)/callback/route.ts`): exchanges code for session
+- Built sign-out route (`app/auth/signout/route.ts`): POST handler that signs out and redirects to login
+- Updated `app/page.tsx`: server component that redirects to `/login` if unauthenticated, shows placeholder dashboard if authenticated
+- Created `scripts/seed-admin.ts`: seeds admin user via `supabase.auth.admin.createUser()` with role in user_metadata
+- Seeded admin user: `admin@logistasolutions.com` / `changeme123!`
+- `handle_new_user` trigger already existed from migration 00001 — reads role from `raw_user_meta_data`, defaults to `operator`
+
+**Notable decisions:**
+- Used `@supabase/ssr` v0.8.0 `getAll`/`setAll` cookie pattern (not deprecated `get`/`set`/`remove`)
+- Next.js 16 `cookies()` returns a Promise — awaited in server.ts
+- Next.js 16 deprecates `middleware.ts` in favor of `proxy.ts` (just a rename, functionality identical). Keeping `middleware.ts` for now; can rename later.
+- Route group `(auth)` means callback is at `/callback` not `/auth/callback` — middleware updated to match
+- Role query in middleware uses `as` cast because Supabase `.select("role").single()` returns `never` type when Database generic doesn't narrow through middleware context
+- Admin seed script is idempotent — re-running just ensures role is admin

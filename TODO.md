@@ -88,19 +88,19 @@
 - [x] Update `docs/database-schema.md` to reflect v2
 - [x] Run verification script (extend for new tables) — 49/49 checks passed
 
-### 0.3 — Set Up Auth
-- [ ] Configure Supabase Auth for email/password (disable self-signup)
-- [ ] Create Supabase client helpers:
-  - [ ] `lib/supabase/client.ts` (browser client)
-  - [ ] `lib/supabase/server.ts` (server component client)
-  - [ ] `lib/supabase/middleware.ts` (auth middleware)
-- [ ] Create middleware to protect all routes except `/login`
-- [ ] Add role-based route protection: admin routes, receiving_tech restrictions, client_portal_user restrictions
-- [ ] Build login page (`app/(auth)/login/page.tsx`)
-- [ ] Build auth callback route (`app/(auth)/callback/route.ts`)
-- [ ] Create user_profiles trigger (auto-create profile on auth.users insert)
-- [ ] Seed admin user
-- [ ] Test: can log in, access protected page, get redirected when logged out
+### 0.3 — Set Up Auth ✅
+- [x] Configure Supabase Auth for email/password (disable self-signup)
+- [x] Create Supabase client helpers:
+  - [x] `lib/supabase/client.ts` (browser client)
+  - [x] `lib/supabase/server.ts` (server component client)
+  - [x] `lib/supabase/middleware.ts` (auth middleware)
+- [x] Create middleware to protect all routes except `/login`
+- [x] Add role-based route protection: admin routes, receiving_tech restrictions, client_portal_user restrictions
+- [x] Build login page (`app/(auth)/login/page.tsx`)
+- [x] Build auth callback route (`app/(auth)/callback/route.ts`)
+- [x] Create user_profiles trigger (auto-create profile on auth.users insert) — already existed from migration 00001
+- [x] Seed admin user — `scripts/seed-admin.ts` (admin@logistasolutions.com)
+- [x] Test: can log in, access protected page, get redirected when logged out
 
 ### 0.4 — App Shell & Layout
 - [ ] Create app shell layout with sidebar navigation and header (`app/(app)/layout.tsx`)
@@ -488,7 +488,7 @@
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| Phase 0: Foundation | In Progress | 0.1 ✅, 0.2 ✅, 0.2b ✅; 0.3 Auth next |
+| Phase 0: Foundation | In Progress | 0.1 ✅, 0.2 ✅, 0.2b ✅, 0.3 ✅; 0.4 App Shell next |
 | Phase 1: Core Data Entry | Not Started | Clients + revenue terms, Transactions, Asset Intake (barcode, serialized/bulk, inventory), Asset Edit (dynamic fields, drive-level sanitization, buyer select, photos) |
 | Phase 2: Asset Processing | Not Started | Asset List (internal_asset_id, tracking_mode, bulk ops), Detail (photos, inventory, settlement), HD Crush (drive-level), Global Search (internal_asset_id, inventory) |
 | Phase 3: Reports | Not Started | Disposition, Sanitization (drive-level), Data Destruction, Recycling |

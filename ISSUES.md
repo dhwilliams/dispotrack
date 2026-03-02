@@ -22,3 +22,15 @@
 - After dropping `asset_hardware`, PostgREST HEAD-only count queries (`select('*', { count: 'exact', head: true })`) still returned no error, making it appear the table still existed
 - Column-specific queries (`select('id').limit(1)`) correctly returned "Could not find the table" error
 - **Fix**: Updated verification script to use column-specific queries for removed-table detection. User ran `NOTIFY pgrst, 'reload schema'` in SQL Editor after DDL changes.
+
+## Phase 0.3
+
+### Issue: Supabase `.select("role").single()` returns `never` type in middleware
+- In `lib/supabase/middleware.ts`, querying `user_profiles` with `.select("role").single()` caused `profile?.role` to error with "Property 'role' does not exist on type 'never'"
+- The Database generic doesn't narrow correctly through the middleware context's createServerClient
+- **Fix**: Cast with `(profile as { role: string } | null)?.role`
+
+### Issue: Route group `(auth)` strips "auth" from URL paths
+- `app/(auth)/callback/route.ts` serves at `/callback`, not `/auth/callback`
+- Middleware was checking `pathname.startsWith("/auth/callback")` which never matched
+- **Fix**: Updated middleware to check `/callback` and `/auth/` prefixes separately
