@@ -1,10 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { PageHeader } from "@/components/layout/page-header"
 import { TransactionSelect } from "@/components/shared/transaction-select"
 import { DispositionCertificate } from "@/components/reports/disposition-certificate"
+import { saveRecentReport } from "../page"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2, FileText } from "lucide-react"
@@ -27,10 +29,28 @@ interface ReportData {
 }
 
 export default function DispositionReportPage() {
+  const searchParams = useSearchParams()
   const [transactionId, setTransactionId] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [reportData, setReportData] = useState<ReportData | null>(null)
+
+  // Auto-resolve ?txn= param from quick-nav
+  useEffect(() => {
+    const txnHint = searchParams.get("txn")
+    if (!txnHint) return
+
+    async function resolve() {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from("transactions")
+        .select("id")
+        .eq("transaction_number", txnHint!)
+        .single()
+      if (data) setTransactionId(data.id)
+    }
+    resolve()
+  }, [searchParams])
 
   async function handleGenerate() {
     if (!transactionId) {
@@ -115,6 +135,13 @@ export default function DispositionReportPage() {
         customerName: client.name,
         customerAddress: addressLines,
         assets: assetRows,
+      })
+
+      saveRecentReport({
+        reportType: "disposition",
+        transactionNumber: transaction.transaction_number,
+        customerName: client.name,
+        href: `/reports/disposition?txn=${encodeURIComponent(transaction.transaction_number)}`,
       })
     } catch {
       setError("An unexpected error occurred.")
