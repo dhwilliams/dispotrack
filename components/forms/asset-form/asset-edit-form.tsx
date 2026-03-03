@@ -26,12 +26,22 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Loader2,
   Plus,
   Trash2,
-  Check,
   UserPlus,
 } from "lucide-react"
+import { toast } from "sonner"
 import { DynamicFields } from "./dynamic-fields"
 import { InternalIdDisplay } from "@/components/shared/internal-id-display"
 import type {
@@ -126,9 +136,8 @@ export function AssetEditForm({
   statusHistory,
 }: AssetEditFormProps) {
   const [saving, setSaving] = useState<string | null>(null)
-  const [saved, setSaved] = useState<string | null>(null)
-  const [error, setError] = useState("")
   const [buyers, setBuyers] = useState(initialBuyers)
+  const [removeDriveIdx, setRemoveDriveIdx] = useState<number | null>(null)
 
   // Product Info state
   const [serialNumber, setSerialNumber] = useState(asset.serial_number ?? "")
@@ -213,8 +222,6 @@ export function AssetEditForm({
 
   async function saveTab(tab: string, data: Record<string, unknown>) {
     setSaving(tab)
-    setSaved(null)
-    setError("")
     try {
       const res = await fetch(`/api/assets/${asset.id}`, {
         method: "PUT",
@@ -223,13 +230,12 @@ export function AssetEditForm({
       })
       const result = await res.json()
       if (!result.success) {
-        setError(result.error)
+        toast.error(result.error || "Failed to save")
       } else {
-        setSaved(tab)
-        setTimeout(() => setSaved(null), 2000)
+        toast.success("Saved successfully")
       }
     } catch {
-      setError("Failed to save. Please try again.")
+      toast.error("Failed to save. Please try again.")
     } finally {
       setSaving(null)
     }
@@ -304,15 +310,10 @@ export function AssetEditForm({
         >
           {saving === tab ? (
             <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
-          ) : saved === tab ? (
-            <><Check className="mr-2 h-4 w-4 text-green-600" /> Saved</>
           ) : (
             "Save"
           )}
         </Button>
-        {error && saving === null && saved === null && (
-          <p className="text-sm text-destructive">{error}</p>
-        )}
       </div>
     )
   }
@@ -326,8 +327,11 @@ export function AssetEditForm({
     }])
   }
 
-  function removeDrive(index: number) {
-    setDrives(drives.filter((_, i) => i !== index))
+  function confirmRemoveDrive() {
+    if (removeDriveIdx !== null) {
+      setDrives(drives.filter((_, i) => i !== removeDriveIdx))
+      setRemoveDriveIdx(null)
+    }
   }
 
   function updateDrive(index: number, field: keyof DriveRow, value: string | number) {
@@ -461,7 +465,7 @@ export function AssetEditForm({
                     <div key={idx} className="rounded-md border p-4 space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">Drive {drive.drive_number}</span>
-                        <Button type="button" variant="ghost" size="sm" onClick={() => removeDrive(idx)}>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setRemoveDriveIdx(idx)}>
                           <Trash2 className="h-3.5 w-3.5 text-destructive" />
                         </Button>
                       </div>
@@ -502,7 +506,7 @@ export function AssetEditForm({
                   onClick={() => saveTab("hard_drives", { drives })}
                   disabled={saving !== null}
                 >
-                  {saving === "hard_drives" ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving Drives...</> : saved === "hard_drives" ? <><Check className="mr-2 h-4 w-4 text-green-600" /> Drives Saved</> : "Save Drives"}
+                  {saving === "hard_drives" ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving Drives...</> : "Save Drives"}
                 </Button>
               )}
             </div>
@@ -725,6 +729,24 @@ export function AssetEditForm({
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Confirm drive removal */}
+      <AlertDialog open={removeDriveIdx !== null} onOpenChange={(open) => { if (!open) setRemoveDriveIdx(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Hard Drive</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove Drive {removeDriveIdx !== null ? drives[removeDriveIdx]?.drive_number : ""}
+              {removeDriveIdx !== null && drives[removeDriveIdx]?.serial_number ? ` (${drives[removeDriveIdx].serial_number})` : ""}?
+              You&apos;ll need to save the Hardware tab to persist this change.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRemoveDrive}>Remove</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

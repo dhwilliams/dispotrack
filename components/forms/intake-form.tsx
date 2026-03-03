@@ -24,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Loader2, Plus, ArrowRight } from "lucide-react"
+import { toast } from "sonner"
 import { BarcodeScanner } from "@/components/shared/barcode-scanner"
 import { InternalIdDisplay } from "@/components/shared/internal-id-display"
 import { TransactionSelect } from "@/components/shared/transaction-select"
@@ -134,6 +135,7 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
       if (!result.success) {
         setError(result.error)
         if (result.fieldErrors) setFieldErrors(result.fieldErrors)
+        toast.error(result.error || "Failed to create asset")
         return
       }
 
@@ -144,8 +146,10 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
       }
       setLastCreated(created)
       setCreatedAssets((prev) => [created, ...prev])
+      toast.success(`Asset ${created.internal_asset_id} created`)
     } catch {
       setError("Failed to create asset. Please try again.")
+      toast.error("Failed to create asset. Please try again.")
     } finally {
       setIsPending(false)
     }

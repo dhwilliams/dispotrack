@@ -385,11 +385,11 @@
 - [x] Admin-only route protection (middleware already in place from Phase 0.3)
 
 ### 4.3 — Performance & UX
-- [ ] Add loading states (skeletons) to all data-fetching pages
-- [ ] Optimize database queries (ensure filters use indexes, parallelize with Promise.all)
-- [ ] Add error boundaries (error.tsx + not-found pages)
-- [ ] Toast notifications for all CRUD operations (success/error)
-- [ ] Confirm dialogs for destructive actions (delete, status changes)
+- [x] Add loading states (skeletons) to all data-fetching pages
+- [x] Optimize database queries (ensure filters use indexes, parallelize with Promise.all)
+- [x] Add error boundaries (error.tsx + not-found pages)
+- [x] Toast notifications for all CRUD operations (success/error)
+- [x] Confirm dialogs for destructive actions (delete, status changes)
 
 ### 4.4 — Responsive & Accessibility
 - [ ] Test all pages on tablet viewport (1024px) — primary desktop use but should handle smaller
@@ -484,5 +484,5 @@
 | Phase 1: Core Data Entry | Complete | 1.1 ✅, 1.2 ✅, 1.3 ✅, 1.4 ✅ |
 | Phase 2: Asset Processing | Complete | 2.1 ✅, 2.2 ✅, 2.3 ✅, 2.4 ✅ |
 | Phase 3: Reports | Complete | 3.1 ✅, 3.2 ✅, 3.3 ✅, 3.4 ✅, 3.5 ✅ |
-| Phase 4: Dashboard, Admin & Analytics | In Progress | 4.1 ✅, 4.2 ✅, 4.3 next |
+| Phase 4: Dashboard, Admin & Analytics | In Progress | 4.1 ✅, 4.2 ✅, 4.3 ✅, 4.4 next |
 | Phase 5: Deploy & Migration | Not Started | Vercel, Production, Caspio Data Migration (internal_asset_ids, inventory records, asset_hardware → JSONB, drive-level sanitization) |

@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useTransition, useEffect } from "react"
 import Link from "next/link"
 import { Search, HardDrive, CheckCircle2, AlertCircle, ExternalLink } from "lucide-react"
 
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -203,12 +204,14 @@ export function HdCrushForm() {
 
         if (!success) {
           setCrushError(error ?? "Failed to record crush")
+          toast.error(error ?? "Failed to record crush")
         } else {
           const crushedDrive = result.allDrives.find((d) => d.id === driveId)
           setCrushSuccess({
             driveSerial: crushedDrive?.serial_number ?? `Drive #${crushedDrive?.drive_number}`,
             allDrivesSanitized,
           })
+          toast.success(`Drive ${crushedDrive?.serial_number ?? `#${crushedDrive?.drive_number}`} recorded as destroyed`)
           setCrushDriveId(null)
 
           // Re-search to refresh drive statuses

@@ -396,3 +396,38 @@
 - Routing rules, field definitions, and buyers use server actions + `revalidatePath("/admin")` for seamless data refresh after mutations.
 - Admin route protection already existed in middleware (Phase 0.3) — `/admin` routes redirect non-admin users to `/`.
 - Field definitions: `field_name` and `asset_type` are immutable on edit (only label, type, options, group, required, sort_order can change). This prevents breaking existing JSONB data references.
+
+## Phase 4.3 — Performance & UX
+
+**What was done:**
+- **Loading skeletons** — 9 `loading.tsx` files for all server component pages: dashboard, clients, clients/[id], transactions, transactions/[id], assets, assets/[id], assets/[id]/edit, admin. Each skeleton matches the page's layout structure.
+- **Error boundaries** — `app/(app)/error.tsx` with AlertTriangle icon, error message display, digest ID, "Go Back" and "Try Again" buttons. `app/(app)/not-found.tsx` with FileQuestion icon and "Back to Dashboard" link.
+- **Toast notifications** — Added `toast` from sonner to 5 files: asset-edit-form (replaced inline "Saved!" indicators), intake-form (on asset creation), hd-crush-form (on drive destruction), admin-panel (all CRUD operations), asset-list-wrapper (bulk actions). Toaster was already in root layout.
+- **Confirm dialogs** — Added AlertDialog (shadcn) for: bulk status/destination changes in asset list (shows count + new value before applying), hard drive row removal in asset edit form (warns user to save after removal). Admin panel already had delete confirmation dialogs.
+- Installed shadcn `alert-dialog` component.
+
+**Files created:**
+- `app/(app)/loading.tsx` — Dashboard skeleton
+- `app/(app)/clients/loading.tsx` — Client list skeleton
+- `app/(app)/clients/[id]/loading.tsx` — Client form skeleton
+- `app/(app)/transactions/loading.tsx` — Transaction list skeleton
+- `app/(app)/transactions/[id]/loading.tsx` — Transaction detail skeleton
+- `app/(app)/assets/loading.tsx` — Asset list skeleton
+- `app/(app)/assets/[id]/loading.tsx` — Asset detail skeleton
+- `app/(app)/assets/[id]/edit/loading.tsx` — Asset edit skeleton
+- `app/(app)/admin/loading.tsx` — Admin panel skeleton
+- `app/(app)/error.tsx` — Error boundary
+- `app/(app)/not-found.tsx` — Not found page
+- `components/ui/alert-dialog.tsx` — shadcn component
+
+**Files modified:**
+- `components/forms/asset-form/asset-edit-form.tsx` — Toast + confirm dialog for drive removal
+- `components/forms/intake-form.tsx` — Toast on create
+- `components/forms/hd-crush-form.tsx` — Toast on crush
+- `app/(app)/admin/admin-panel.tsx` — Toast on all CRUD
+- `components/tables/asset-list-wrapper.tsx` — Toast + confirm dialog for bulk actions
+
+**Notable decisions:**
+- Replaced inline "Saved!" / error indicators in asset-edit-form with sonner toasts for consistency. Removed the `saved` state variable entirely.
+- Database queries already parallelize via Promise.all (dashboard, admin page, etc.) and use indexed columns — no further optimization needed.
+- Not-found handling in asset/transaction detail pages already calls `notFound()` from next/navigation — the new `not-found.tsx` in the (app) group catches these.

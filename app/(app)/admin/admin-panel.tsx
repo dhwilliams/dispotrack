@@ -38,6 +38,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 
+import { toast } from "sonner"
 import {
   createRoutingRule,
   updateRoutingRule,
@@ -273,6 +274,7 @@ export function AdminPanel({
         })
         const data = await res.json()
         if (!res.ok) { setUserError(data.error || "Failed to update"); return }
+        toast.success("User updated")
       } else {
         // Create
         if (!userForm.email || !userForm.password) {
@@ -286,6 +288,7 @@ export function AdminPanel({
         })
         const data = await res.json()
         if (!res.ok) { setUserError(data.error || "Failed to create"); return }
+        toast.success("User created")
       }
       setUserDialogOpen(false)
       fetchUsers()
@@ -300,7 +303,12 @@ export function AdminPanel({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId: user.id, deactivate: !user.banned }),
     })
-    if (res.ok) fetchUsers()
+    if (res.ok) {
+      toast.success(user.banned ? "User reactivated" : "User deactivated")
+      fetchUsers()
+    } else {
+      toast.error("Failed to update user status")
+    }
   }
 
   // =========================================================================
@@ -346,6 +354,7 @@ export function AdminPanel({
 
       const result = editingRule ? await updateRoutingRule(fd) : await createRoutingRule(fd)
       if (result?.error) { setRuleError(result.error); return }
+      toast.success(editingRule ? "Rule updated" : "Rule created")
       setRuleDialogOpen(false)
     } finally {
       setRuleSaving(false)
@@ -354,6 +363,7 @@ export function AdminPanel({
 
   async function handleToggleRule(rule: RoutingRule) {
     await toggleRoutingRule(rule.id, !rule.is_active)
+    toast.success(rule.is_active ? "Rule deactivated" : "Rule activated")
   }
 
   // =========================================================================
@@ -408,6 +418,7 @@ export function AdminPanel({
 
       const result = editingField ? await updateFieldDefinition(fd) : await createFieldDefinition(fd)
       if (result?.error) { setFieldError(result.error); return }
+      toast.success(editingField ? "Field updated" : "Field created")
       setFieldDialogOpen(false)
     } finally {
       setFieldSaving(false)
@@ -453,6 +464,7 @@ export function AdminPanel({
 
       const result = editingBuyer ? await updateBuyer(fd) : await createBuyer(fd)
       if (result?.error) { setBuyerError(result.error); return }
+      toast.success(editingBuyer ? "Buyer updated" : "Buyer created")
       setBuyerDialogOpen(false)
     } finally {
       setBuyerSaving(false)
@@ -474,10 +486,11 @@ export function AdminPanel({
 
   async function handleDeleteConfirm() {
     if (!deleteConfirm) return
-    const { type, id } = deleteConfirm
+    const { type, id, name } = deleteConfirm
     if (type === "rule") await deleteRoutingRule(id)
     else if (type === "field") await deleteFieldDefinition(id)
     else if (type === "buyer") await deleteBuyer(id)
+    toast.success(`Deleted ${name}`)
     setDeleteConfirm(null)
   }
 

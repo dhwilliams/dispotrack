@@ -5,6 +5,16 @@ import { useSearchParams } from "next/navigation"
 import { AssetTable } from "./asset-table"
 import { Button } from "@/components/ui/button"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -12,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Download, RefreshCw } from "lucide-react"
+import { toast } from "sonner"
 import type { AssetRow } from "./asset-table"
 
 interface AssetListWrapperProps {
@@ -48,6 +59,7 @@ export function AssetListWrapper({
   const [bulkAction, setBulkAction] = useState("")
   const [bulkValue, setBulkValue] = useState("")
   const [applying, setApplying] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   const totalPages = Math.ceil(totalCount / perPage)
   const from = (page - 1) * perPage + 1
@@ -93,14 +105,17 @@ export function AssetListWrapper({
       })
       const result = await res.json()
       if (result.success) {
+        toast.success(`Updated ${selectedIds.length} asset${selectedIds.length > 1 ? "s" : ""}`)
         setSelectedIds([])
         setBulkAction("")
         setBulkValue("")
         // Refresh the page to get updated data
         window.location.reload()
+      } else {
+        toast.error(result.error || "Bulk update failed")
       }
     } catch {
-      // Error handled silently — user sees no change
+      toast.error("Bulk update failed")
     } finally {
       setApplying(false)
     }
@@ -159,7 +174,7 @@ export function AssetListWrapper({
                   size="sm"
                   variant="default"
                   className="h-8 text-xs"
-                  onClick={handleBulkApply}
+                  onClick={() => setConfirmOpen(true)}
                   disabled={applying}
                 >
                   {applying ? (
@@ -244,6 +259,25 @@ export function AssetListWrapper({
           </Button>
         </div>
       )}
+      {/* Bulk action confirmation dialog */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Bulk Update</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will update the {bulkAction === "status" ? "status" : "destination"} of{" "}
+              <strong>{selectedIds.length}</strong> asset{selectedIds.length > 1 ? "s" : ""} to{" "}
+              <strong>{bulkValue.replace(/_/g, " ")}</strong>. This action will be logged in the status history.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmOpen(false); handleBulkApply() }}>
+              Apply Changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
