@@ -58,7 +58,7 @@ const reportTypes = [
       "Lists assets with destination = recycle. Certifies responsible recycling in compliance with regulations.",
     href: "/reports/recycling",
     icon: Recycle,
-    ready: false,
+    ready: true,
   },
 ]
 
