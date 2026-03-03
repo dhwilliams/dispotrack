@@ -465,7 +465,7 @@ export function AssetEditForm({
                     <div key={idx} className="rounded-md border p-4 space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">Drive {drive.drive_number}</span>
-                        <Button type="button" variant="ghost" size="sm" onClick={() => setRemoveDriveIdx(idx)}>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setRemoveDriveIdx(idx)} aria-label={`Remove drive ${drive.drive_number}`} title="Remove drive">
                           <Trash2 className="h-3.5 w-3.5 text-destructive" />
                         </Button>
                       </div>

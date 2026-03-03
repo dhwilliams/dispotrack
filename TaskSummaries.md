@@ -431,3 +431,25 @@
 - Replaced inline "Saved!" / error indicators in asset-edit-form with sonner toasts for consistency. Removed the `saved` state variable entirely.
 - Database queries already parallelize via Promise.all (dashboard, admin page, etc.) and use indexed columns — no further optimization needed.
 - Not-found handling in asset/transaction detail pages already calls `notFound()` from next/navigation — the new `not-found.tsx` in the (app) group catches these.
+
+## Phase 4.4 — Responsive & Accessibility
+
+**What was done:**
+- **Responsive audit** — Checked all pages at 1024px tablet viewport. Dashboard, forms, and reports all use proper responsive breakpoints (`sm:grid-cols-2 lg:grid-cols-3`). Admin/revenue grids inside dialogs (already width-constrained). Header search button width made responsive (`w-48 lg:w-64`).
+- **Keyboard navigation audit** — Verified all dialogs (Radix focus trap), command palette (Cmd+K, Escape, arrow keys, Enter), form submission patterns, barcode scanner Enter handling. Fixed asset table rows to support Enter/Space keyboard activation (`tabIndex={0}` + `onKeyDown`).
+- **Color contrast fixes** — All 27 status/type/role badge combinations pass WCAG AA (6.8:1+). Fixed error banners from `bg-destructive/10 text-destructive` (2.8:1 FAIL) to `bg-red-100 text-red-800` (7.0:1 PASS). Standardized command palette status colors to match main STATUS_COLORS map (`-800` text shades, fixed `yellow` to `amber`).
+- **ARIA labels** — Added `aria-label` + `title` to 2 icon-only buttons missing labels (copy asset ID, remove drive). Added `role="listbox"` + `role="option"` + `aria-selected` to HD crush typeahead suggestions. Added `role="combobox"` + `aria-autocomplete` + `aria-expanded` + `aria-controls` to typeahead input.
+
+**Files modified:**
+- `components/shared/internal-id-display.tsx` — aria-label on copy button
+- `components/forms/asset-form/asset-edit-form.tsx` — aria-label on drive remove button
+- `components/forms/hd-crush-form.tsx` — Error banner contrast fix, ARIA roles on typeahead
+- `components/shared/command-palette.tsx` — Status colors standardized to -800 shades
+- `components/tables/asset-table.tsx` — Keyboard activation on table rows
+- `components/layout/header.tsx` — Responsive search button width
+
+**Notable decisions:**
+- Admin panel grids (`grid-cols-2/3`) are all inside Dialog components which are already width-constrained by Radix — no responsive changes needed.
+- Sidebar remains fixed 240px at all widths. A collapsible hamburger menu for < 1024px would be a larger feature, not needed for the "1024px tablet" requirement.
+- Zero custom `tabIndex` attributes existed in the codebase (excellent). Only added `tabIndex={0}` to asset table rows for keyboard activation.
+- All 10 admin panel icon-only buttons already had `title` attributes — only 2 buttons in other components were missing labels.

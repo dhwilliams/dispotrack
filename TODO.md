@@ -392,10 +392,10 @@
 - [x] Confirm dialogs for destructive actions (delete, status changes)
 
 ### 4.4 — Responsive & Accessibility
-- [ ] Test all pages on tablet viewport (1024px) — primary desktop use but should handle smaller
-- [ ] Keyboard navigation audit (Tab, Escape, Enter)
-- [ ] Color contrast check on status badges and grading indicators
-- [ ] ARIA labels on icon-only buttons and custom controls
+- [x] Test all pages on tablet viewport (1024px) — primary desktop use but should handle smaller
+- [x] Keyboard navigation audit (Tab, Escape, Enter)
+- [x] Color contrast check on status badges and grading indicators
+- [x] ARIA labels on icon-only buttons and custom controls
 
 ### 4.5 — Inventory Management
 - [ ] Build `app/(app)/inventory/page.tsx` — Stock on hand view
@@ -484,5 +484,5 @@
 | Phase 1: Core Data Entry | Complete | 1.1 ✅, 1.2 ✅, 1.3 ✅, 1.4 ✅ |
 | Phase 2: Asset Processing | Complete | 2.1 ✅, 2.2 ✅, 2.3 ✅, 2.4 ✅ |
 | Phase 3: Reports | Complete | 3.1 ✅, 3.2 ✅, 3.3 ✅, 3.4 ✅, 3.5 ✅ |
-| Phase 4: Dashboard, Admin & Analytics | In Progress | 4.1 ✅, 4.2 ✅, 4.3 ✅, 4.4 next |
+| Phase 4: Dashboard, Admin & Analytics | In Progress | 4.1 ✅, 4.2 ✅, 4.3 ✅, 4.4 ✅, 4.5 next |
 | Phase 5: Deploy & Migration | Not Started | Vercel, Production, Caspio Data Migration (internal_asset_ids, inventory records, asset_hardware → JSONB, drive-level sanitization) |

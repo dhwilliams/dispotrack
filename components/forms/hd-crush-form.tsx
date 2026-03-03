@@ -269,18 +269,27 @@ export function HdCrushForm() {
                 className="font-mono"
                 autoComplete="off"
                 autoFocus
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded={showSuggestions && suggestions.length > 0}
+                aria-controls="hd-serial-suggestions"
               />
 
               {/* Typeahead dropdown */}
               {showSuggestions && suggestions.length > 0 && (
                 <div
                   ref={suggestionsRef}
+                  id="hd-serial-suggestions"
+                  role="listbox"
+                  aria-label="Drive serial suggestions"
                   className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-lg"
                 >
                   {suggestions.map((s, i) => (
                     <button
                       key={s.serial_number}
                       type="button"
+                      role="option"
+                      aria-selected={i === activeSuggestion}
                       className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-accent ${
                         i === activeSuggestion ? "bg-accent" : ""
                       } ${i === 0 ? "rounded-t-md" : ""} ${
@@ -309,7 +318,7 @@ export function HdCrushForm() {
           </form>
 
           {searchError && (
-            <div className="mt-4 flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+            <div className="mt-4 flex items-center gap-2 rounded-md bg-red-100 p-3 text-sm text-red-800">
               <AlertCircle className="h-4 w-4 shrink-0" />
               {searchError}
             </div>
@@ -339,7 +348,7 @@ export function HdCrushForm() {
 
       {/* Crush error */}
       {crushError && (
-        <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+        <div className="flex items-center gap-2 rounded-md bg-red-100 p-3 text-sm text-red-800">
           <AlertCircle className="h-4 w-4 shrink-0" />
           {crushError}
         </div>

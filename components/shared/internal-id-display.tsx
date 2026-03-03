@@ -32,6 +32,8 @@ export function InternalIdDisplay({
         size="sm"
         className="h-7 w-7 p-0"
         onClick={copyToClipboard}
+        aria-label="Copy asset ID"
+        title="Copy"
       >
         {copied ? (
           <Check className="h-3.5 w-3.5 text-green-600" />

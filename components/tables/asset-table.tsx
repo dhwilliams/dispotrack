@@ -311,7 +311,14 @@ export function AssetTable({
                 key={asset.id}
                 data-state={isSelected ? "selected" : undefined}
                 className="cursor-pointer"
+                tabIndex={0}
                 onClick={() => handleRowClick(asset.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault()
+                    handleRowClick(asset.id)
+                  }
+                }}
               >
                 {/* Checkbox */}
                 <TableCell onClick={(e) => e.stopPropagation()}>

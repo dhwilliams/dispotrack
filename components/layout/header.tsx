@@ -45,7 +45,7 @@ export function Header({ userEmail, userName, userRole }: HeaderProps) {
     <header className="flex h-14 items-center justify-between border-b bg-background px-6">
       <Button
         variant="outline"
-        className="h-9 w-64 justify-start gap-2 text-muted-foreground"
+        className="h-9 w-48 justify-start gap-2 text-muted-foreground lg:w-64"
         onClick={() => setSearchOpen(true)}
       >
         <Search className="h-4 w-4" />
