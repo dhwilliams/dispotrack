@@ -293,3 +293,17 @@
 - Logo has `onError` handler to gracefully hide if file is missing — prevents broken image on deployments without the logo.
 - Reports landing page uses card grid with icon + description per certificate type, ready for future certificates to be wired in.
 - CSV download generates client-side Blob with proper escaping (double-quote wrapping, escaped inner quotes).
+
+## Phase 3.2 — Certificate of Sanitization
+
+**What was done:**
+- Built `app/(app)/reports/sanitization/page.tsx` — Client component with transaction search form. Fetches assets with `asset_hard_drives` (drive-level sanitization) and `asset_sanitization` (device-level fallback). Filters to only assets with actual sanitization records. Shows error message if no sanitized assets found.
+- Built `components/reports/sanitization-certificate.tsx` — Certificate matching Caspio format: NIST 800-88 certification text, 8-column table (Asset SN, Asset Type, Description, MFG, MFG Model, Hard Drive SN, Sanitization Method, Sanitization Date). Same print CSS pattern as disposition certificate. Drive serials space-separated per asset row matching Caspio layout.
+- Updated `app/(app)/reports/page.tsx` — Marked Certificate of Sanitization card as `ready: true`.
+
+**Notable decisions:**
+- **Drive-level first, device-level fallback**: Query fetches `asset_hard_drives` per asset and filters to drives with non-null/non-"none" sanitization_method. Falls back to `asset_sanitization` for assets without drives (e.g., phones, monitors with device-level wipe notes).
+- **Display: one row per asset** (matching Caspio) with all drive serials concatenated space-separated in the Hard Drive SN column. Method shows the first drive's method; date shows the latest across all drives.
+- **CSV: one row per drive** for granular export — each drive's individual serial/method/date gets its own row. This gives more detail than the on-screen display.
+- Wider `max-width: 1200px` (vs 1100px on disposition) to accommodate the 8-column table without cramping.
+- Print font sizes slightly smaller (8pt body, 7pt drive serials) to fit the wider table on paper.

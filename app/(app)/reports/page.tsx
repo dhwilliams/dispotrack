@@ -18,7 +18,7 @@ const reports = [
       "Lists assets with sanitization records (drive-level). Certifies NIST 800-88 compliant data sanitization.",
     href: "/reports/sanitization",
     icon: Shield,
-    ready: false,
+    ready: true,
   },
   {
     title: "Certificate of Data Destruction",
