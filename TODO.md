@@ -324,18 +324,18 @@
 - [x] Same print CSS treatment
 - [x] "Print" and "Download Data" buttons
 
-### 3.5 — Certificate of Recycling
-- [ ] Build `app/(app)/reports/recycling/page.tsx` — Search/generate form
-- [ ] Input: Transaction number (search and select)
-- [ ] Generate report that includes:
+### 3.5 — Certificate of Recycling ✅
+- [x] Build `app/(app)/reports/recycling/page.tsx` — Search/generate form
+- [x] Input: Transaction number (search and select)
+- [x] Generate report that includes:
   - Logista logo (top right)
   - "Certificate of Recycling" title
   - Date generated, transaction number, customer name and address
   - Certification text referencing responsible recycling per applicable regulations
   - Asset table: Asset Type, Description, Asset SN, MFG, MFG Model, Weight
   - Only show assets with destination = 'recycle'
-- [ ] Same print CSS treatment
-- [ ] "Print" and "Download Data" buttons
+- [x] Same print CSS treatment
+- [x] "Print" and "Download Data" buttons
 
 ---
 
@@ -481,6 +481,6 @@
 | Phase 0: Foundation | Complete | 0.1 ✅, 0.2 ✅, 0.2b ✅, 0.3 ✅, 0.4 ✅ |
 | Phase 1: Core Data Entry | Complete | 1.1 ✅, 1.2 ✅, 1.3 ✅, 1.4 ✅ |
 | Phase 2: Asset Processing | Complete | 2.1 ✅, 2.2 ✅, 2.3 ✅, 2.4 ✅ |
-| Phase 3: Reports | In Progress | 3.1 ✅, 3.2 ✅, 3.3 ✅, 3.4 ✅; 3.5 Recycling next |
+| Phase 3: Reports | Complete | 3.1 ✅, 3.2 ✅, 3.3 ✅, 3.4 ✅, 3.5 ✅ |
 | Phase 4: Dashboard, Admin & Analytics | Not Started | Dashboard + analytics, Admin (users, routing rules, field defs, buyers), Performance, A11y, Inventory Management |
 | Phase 5: Deploy & Migration | Not Started | Vercel, Production, Caspio Data Migration (internal_asset_ids, inventory records, asset_hardware → JSONB, drive-level sanitization) |

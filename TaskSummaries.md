@@ -336,3 +336,16 @@
 - Display: one row per asset with drive serials space-separated and latest crush date (same pattern as sanitization certificate). CSV: one row per drive for granular export.
 - Footer includes "Total Drives Destroyed" count alongside asset count — useful for auditors verifying drive counts match manifests.
 - 6 columns (no Description column) since destruction cert focuses on hardware identity + drive tracking, not asset descriptions.
+
+## Phase 3.5 — Certificate of Recycling
+
+**What was done:**
+- Built `components/reports/recycling-certificate.tsx` — Certificate with e-waste recycling certification text, 6-column table (Asset Type, Description, Asset SN, MFG, MFG Model, Weight). Right-aligned weight column with `font-variant-numeric: tabular-nums`. Table `<tfoot>` row totaling weight with bold styling. Footer shows total assets + total weight.
+- Built `app/(app)/reports/recycling/page.tsx` — Page with TransactionSelect, fetches assets filtered to `asset_destination = 'recycle'`, pulls description from `asset_type_details`. `?txn=` param and `saveRecentReport()` integration.
+- Updated `app/(app)/reports/page.tsx` — Marked recycling card as `ready: true`. All 4 certificate cards now active.
+
+**Notable decisions:**
+- Filters on `asset_destination = 'recycle'` (not status = 'recycled') since assets may be destined for recycling before the status is formally advanced.
+- Weight column right-aligned with tabular-nums for clean numeric alignment. Table footer uses `<tfoot>` with a thicker top border for visual separation.
+- Total weight shown in both the table footer and the page footer — redundant but useful when the table spans multiple pages in print.
+- **Phase 3 (Reports & Certificates) is now complete.** All 4 certificates built: Disposition, Sanitization, Data Destruction, Recycling.
