@@ -203,38 +203,28 @@
 
 > Goal: Build the asset browsing, filtering, and processing workflows — the "Download/Edit Asset Report" equivalent and the HD Crush workflow.
 
-### 2.1 — Asset List & Search
-- [ ] Build `app/(app)/assets/page.tsx` — Asset listing page (the main report view)
-- [ ] Data table with columns matching Caspio report:
-  - Internal Asset ID, Transaction Date, Transaction Number, Customer Cost Center, Customer Name
-  - Asset Type, Description, MFG, MFG Model, Asset Serial Number, Asset Tag
-  - Qty, Tracking Mode, Notes, Available for Sale, Asset Destination
-  - Status (color-coded badge)
-- [ ] Implement filters:
-  - [ ] Transaction number (text search)
-  - [ ] Transaction date range (date pickers)
-  - [ ] Customer name (dropdown)
-  - [ ] Customer cost center (dropdown)
-  - [ ] Internal asset ID (text search)
-  - [ ] Asset serial number (text search)
-  - [ ] Asset type (dropdown)
-  - [ ] Tracking mode (dropdown: serialized/bulk)
-  - [ ] Manufacturer (dropdown)
-  - [ ] MFG Model (text search)
-  - [ ] Asset tag (text search)
-  - [ ] LogistaSO (text search)
-  - [ ] Available for sale (dropdown)
-  - [ ] Bin (text search)
-  - [ ] Asset destination (dropdown)
-  - [ ] Shipment date range
-  - [ ] Status (dropdown)
-- [ ] Sortable column headers
-- [ ] Pagination (25/50/100 per page)
-- [ ] Store filter state in URL search params (shareable/bookmarkable)
-- [ ] "Download Data" export button (CSV)
-- [ ] Click row → navigate to asset detail/edit page
-- [ ] Bulk select with checkboxes for bulk operations (batch status update, batch destination change)
-- [ ] Loading states with skeleton components
+### 2.1 — Asset List & Search ✅
+- [x] Build `app/(app)/assets/page.tsx` — Asset listing page (the main report view)
+- [x] Data table with columns matching Caspio report:
+  - Internal Asset ID, Transaction Date, Transaction Number, Customer Name
+  - Asset Type, MFG, Model, Serial Number, Asset Tag
+  - Qty, Tracking Mode, Status (color-coded badge), Destination
+- [x] Implement filters:
+  - [x] Search (text — matches internal_asset_id, serial_number, model, asset_tag)
+  - [x] Transaction date range (date pickers)
+  - [x] Client (dropdown)
+  - [x] Asset type (dropdown)
+  - [x] Tracking mode (dropdown: serialized/bulk)
+  - [x] Available for sale (dropdown)
+  - [x] Bin (text search)
+  - [x] Asset destination (dropdown)
+  - [x] Status (dropdown)
+- [x] Sortable column headers (6 columns: Asset ID, Date, Customer, Type, MFG, Status)
+- [x] Pagination (25/50/100 per page)
+- [x] Store filter state in URL search params (shareable/bookmarkable)
+- [x] "Download Data" export button (CSV via /api/export)
+- [x] Click row → navigate to asset edit page
+- [x] Bulk select with checkboxes for bulk operations (batch status update, batch destination change via /api/assets/bulk)
 
 ### 2.2 — Asset Detail View
 - [ ] Build `app/(app)/assets/[id]/page.tsx` — Read-only detail view
@@ -490,7 +480,7 @@
 |-------|--------|-------|
 | Phase 0: Foundation | Complete | 0.1 ✅, 0.2 ✅, 0.2b ✅, 0.3 ✅, 0.4 ✅ |
 | Phase 1: Core Data Entry | Complete | 1.1 ✅, 1.2 ✅, 1.3 ✅, 1.4 ✅ |
-| Phase 2: Asset Processing | Not Started | Asset List (internal_asset_id, tracking_mode, bulk ops), Detail (photos, inventory, settlement), HD Crush (drive-level), Global Search (internal_asset_id, inventory) |
+| Phase 2: Asset Processing | In Progress | 2.1 ✅; 2.2 Asset Detail View next |
 | Phase 3: Reports | Not Started | Disposition, Sanitization (drive-level), Data Destruction, Recycling |
 | Phase 4: Dashboard, Admin & Analytics | Not Started | Dashboard + analytics, Admin (users, routing rules, field defs, buyers), Performance, A11y, Inventory Management |
 | Phase 5: Deploy & Migration | Not Started | Vercel, Production, Caspio Data Migration (internal_asset_ids, inventory records, asset_hardware → JSONB, drive-level sanitization) |

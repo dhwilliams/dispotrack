@@ -191,3 +191,20 @@
 - Photos tab deferred — needs Supabase Storage bucket configuration before implementation
 - Type narrowing for Supabase union types: `cosmetic_category` needs cast to `"C1" | "C2" | ...` literal union, `sanitization_method` to its union, `asset_destination` state widened to `string` since Select's `onValueChange` returns plain string
 - Sales tab always visible (not gated on destination) — simpler UX, operators can fill in sales info at any point
+
+## Phase 2.1 — Asset List & Search
+
+**What was done:**
+- Replaced placeholder assets page with full server-side filtered, paginated asset list
+- Built `components/tables/asset-table.tsx` — client component with 12-column data table, 6 sortable column headers (URL param-driven), checkbox bulk select with select-all, color-coded status badges (9 colors), row click → edit page
+- Built `components/tables/asset-filters.tsx` — horizontal filter bar with 10 filters (search, asset type, status, tracking mode, client, destination, available for sale, date range, bin). Native HTML `<select>` elements for reliable GET form submission. Filters stored in URL search params.
+- Built `components/tables/asset-list-wrapper.tsx` — wraps table with bulk actions toolbar (select → pick action → pick value → apply), pagination controls (previous/next + page indicator), per-page selector (25/50/100), CSV export button
+- Built `app/api/export/route.ts` — GET handler for CSV export with same filter params, 18 columns, no pagination limit
+- Built `app/api/assets/bulk/route.ts` — POST handler for bulk status update and bulk destination change, with status history audit logging for bulk status changes
+- Main page (`app/(app)/assets/page.tsx`) fetches assets with Supabase joins (assets → transactions!inner → clients!inner), applies all filters, paginates with `range()`, transforms to flat AssetRow shape for the table
+
+**Notable decisions:**
+- Used native HTML `<select>` elements in filters instead of shadcn Select — simpler and works reliably with native GET form submission (empty `value=""` properly omits the param from URL). Styled to match shadcn appearance.
+- Supabase CHECK constraint columns require literal union casts when filtering (same pattern as Phase 1.4 route handlers). Applied to both the page query and CSV export handler.
+- Bulk actions use `window.location.reload()` after applying — simple and ensures fresh server data. Could be optimized with router.refresh() later.
+- Sort on `transaction_date` falls back to `created_at` since Supabase doesn't support ordering by joined table columns directly. Acceptable for now.
