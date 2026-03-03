@@ -58,3 +58,11 @@
 - In the intake form, this meant the running list of created assets (`createdAssets` state) was wiped after each submission — adding a third asset would lose the first two
 - **Fix**: Replaced the server action with a route handler at `/api/assets/intake`. The intake form now calls `fetch('/api/assets/intake', { method: 'POST', body: formData })` which does NOT trigger an RSC refresh, preserving client state across submissions.
 - **Rule of thumb**: Use server actions for form submissions that redirect or revalidate. Use route handlers for mutations where you need to preserve client state (e.g., rapid multi-submit workflows like quick-add).
+
+## Phase 1.4
+
+### Issue: Supabase union types require literal casts in route handlers
+- When updating `asset_grading`, `cosmetic_category` typed as `string | null` doesn't satisfy the DB's `"C1" | "C2" | ... | null` CHECK constraint type
+- Same for `sanitization_method` on `asset_sanitization` (`"wipe" | "destruct_shred" | ...`) and `details` on `asset_type_details` (`Json` vs `Record<string, unknown>`)
+- **Fix**: Cast each enum field to its literal union type (e.g., `as "C1" | "C2" | "C3" | "C4" | "C5"`), cast JSONB details to `Record<string, Json | undefined>`, widen `asset_destination` state to `string` since Select's `onValueChange` returns plain string
+- **Pattern**: Any Supabase column with a CHECK constraint generates a literal union type. When receiving values from `body: Record<string, unknown>`, always cast to the specific union, not just `string`.

@@ -178,10 +178,10 @@
 - [x] Evaluate routing rules on asset creation and display suggested disposition
 - [x] Auto-log status history entry on creation
 
-### 1.4 — Asset Edit Form (Smart Tabbed)
-- [ ] Build `app/(app)/assets/[id]/edit/page.tsx` — Full asset edit form
-- [ ] Display `internal_asset_id` prominently at top (read-only, with copy + optional label print button)
-- [ ] Tab structure that adapts to asset type:
+### 1.4 — Asset Edit Form (Smart Tabbed) ✅
+- [x] Build `app/(app)/assets/[id]/edit/page.tsx` — Full asset edit form
+- [x] Display `internal_asset_id` prominently at top (read-only, with copy + optional label print button)
+- [x] Tab structure that adapts to asset type:
   - **Product Info** (always shown): Serial, type, manufacturer, model, model name, part#, asset tag, qty, tracking mode, weight, notes
   - **Hardware** (dynamic from field definitions): Renders fields from `asset_type_field_definitions` where `field_group = 'hardware'`. Includes hard drives (dynamic add/remove rows with per-drive sanitization fields).
   - **Testing** (always shown): Cosmetic category dropdown (C1-C5), functioning category dropdown (F1-F5), powers up Y/N, functions properly Y/N
@@ -189,13 +189,13 @@
   - **Status** (always shown): Bin location, asset destination dropdown, available for sale Y/N, reason for change dropdown, explanation
   - **Sanitization** (always shown): Device-level method dropdown + notes. Drive-level sanitization is on each drive row in Hardware tab.
   - **Sales** (shown when destination is External Reuse or Available for Sale): Buyer select (searchable from buyers table, with "New Buyer" quick-add), LogistaSO, customer PO, inline sold-to fields (auto-fill from buyer), eBay info, sale price, sold date, shipping info
-  - **Photos** (always shown): Photo upload (drag-and-drop or click), photo gallery, delete photos
+  - **Photos**: Deferred — needs Supabase Storage bucket setup
   - **History** (always shown, read-only): Timeline of all status changes from asset_status_history
-- [ ] Hard drive section: dynamic rows (add/remove), each row includes sanitization fields (method, date, tech, validation)
-- [ ] Reason for change required when modifying status fields
-- [ ] Server actions: updateAsset, addHardDrive, removeHardDrive, updateDriveSanitization, updateDeviceSanitization, updateSales
-- [ ] Every status change logged to asset_status_history automatically
-- [ ] "Save" button at bottom of form (saves all tabs at once)
+- [x] Hard drive section: dynamic rows (add/remove), each row includes sanitization fields (method, date, tech, validation)
+- [x] Reason for change required when modifying status fields
+- [x] Route handlers: PUT `/api/assets/[id]` (per-tab save), POST `/api/buyers` (quick-add)
+- [x] Every status change logged to asset_status_history automatically
+- [x] Per-tab Save buttons (saves each tab independently, preserves client state)
 
 ---
 
@@ -489,7 +489,7 @@
 | Phase | Status | Notes |
 |-------|--------|-------|
 | Phase 0: Foundation | Complete | 0.1 ✅, 0.2 ✅, 0.2b ✅, 0.3 ✅, 0.4 ✅ |
-| Phase 1: Core Data Entry | In Progress | 1.1 ✅, 1.2 ✅, 1.3 ✅; 1.4 Asset Edit Form next |
+| Phase 1: Core Data Entry | Complete | 1.1 ✅, 1.2 ✅, 1.3 ✅, 1.4 ✅ |
 | Phase 2: Asset Processing | Not Started | Asset List (internal_asset_id, tracking_mode, bulk ops), Detail (photos, inventory, settlement), HD Crush (drive-level), Global Search (internal_asset_id, inventory) |
 | Phase 3: Reports | Not Started | Disposition, Sanitization (drive-level), Data Destruction, Recycling |
 | Phase 4: Dashboard, Admin & Analytics | Not Started | Dashboard + analytics, Admin (users, routing rules, field defs, buyers), Performance, A11y, Inventory Management |

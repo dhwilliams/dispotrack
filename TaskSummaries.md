@@ -172,3 +172,22 @@
 - Used a route handler (`/api/assets/intake`) instead of a server action. Server actions trigger an automatic RSC refresh after execution, which remounts client components and wipes `useState`. The route handler approach with plain `fetch` keeps client state intact across multiple rapid submissions — critical for the quick-add workflow.
 - Manufacturer uses native HTML `datalist` for autocomplete (Dell, HP, Lenovo, Apple, etc.) — simpler than a full Command/Popover and works well for this use case
 - Routing rules evaluated server-side on each asset creation, result displayed in success banner and running table. No rules seeded yet so "suggested" column will show "—" until admin seeds routing rules.
+
+## Phase 1.4 — Asset Edit Form (Smart Tabbed)
+
+**What was done:**
+- Built `app/(app)/assets/[id]/edit/page.tsx` — server component that fetches asset + all related data (grading, type details, field definitions, hard drives, sanitization, sales, buyers, status history) in parallel via `Promise.all`, passes to client form
+- Built `components/forms/asset-form/asset-edit-form.tsx` — full 8-tab client component: Product Info, Hardware (dynamic fields + hard drive rows), Testing/Grading, Type-Specific (dynamic fields), Status, Sanitization, Sales (with buyer select + quick-add dialog), History (read-only timeline)
+- Built `components/forms/asset-form/dynamic-fields.tsx` — renders form fields dynamically from `asset_type_field_definitions` table. Supports text, number, boolean, select, textarea, json_array field types.
+- Built `app/api/assets/[id]/route.ts` — PUT route handler with per-tab dispatch: product_info, type_details, grading, hard_drives, sanitization, status, sales. Status changes auto-logged to asset_status_history.
+- Built `app/api/buyers/route.ts` — POST handler for quick-add buyer creation from the Sales tab dialog
+- Hard drive rows: add/remove dynamically, each row includes drive info (serial, manufacturer, size) + sanitization fields (method, tech, date, verification, validation, date crushed)
+- Buyer select auto-fills sold-to name/address fields from buyer record
+- Internal asset ID displayed prominently at top with type + status badges
+
+**Notable decisions:**
+- Per-tab Save buttons instead of single "Save All" — each tab saves independently via route handler, preserving client state and giving granular feedback. Same route handler pattern as Phase 1.3 intake.
+- Hardware tab combines dynamic field definitions (from DB) with hard drive management in one view. "Save" and "Save Drives" are separate buttons since they write to different tables.
+- Photos tab deferred — needs Supabase Storage bucket configuration before implementation
+- Type narrowing for Supabase union types: `cosmetic_category` needs cast to `"C1" | "C2" | ...` literal union, `sanitization_method` to its union, `asset_destination` state widened to `string` since Select's `onValueChange` returns plain string
+- Sales tab always visible (not gated on destination) — simpler UX, operators can fill in sales info at any point
