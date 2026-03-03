@@ -307,3 +307,19 @@
 - **CSV: one row per drive** for granular export — each drive's individual serial/method/date gets its own row. This gives more detail than the on-screen display.
 - Wider `max-width: 1200px` (vs 1100px on disposition) to accommodate the 8-column table without cramping.
 - Print font sizes slightly smaller (8pt body, 7pt drive serials) to fit the wider table on paper.
+
+## Phase 3.3 — Reports Hub
+
+**What was done:**
+- Rewrote `app/(app)/reports/page.tsx` as a client component with three sections:
+  1. **Quick Search**: Text input for transaction number, resolves via Supabase ILIKE query, shows matched transaction info + report type navigation buttons
+  2. **Report Type Cards**: 4 certificate types (Disposition, Sanitization active; Data Destruction, Recycling "Coming soon")
+  3. **Recent Reports**: localStorage-backed list (max 8), clickable cards showing report type, transaction number, customer name, generated date. Clear button to reset.
+- Exported `saveRecentReport()` function from the reports page for use by individual report pages
+- Updated `app/(app)/reports/disposition/page.tsx`: reads `?txn=` search param to auto-resolve and pre-select transaction, calls `saveRecentReport()` after successful generation
+- Updated `app/(app)/reports/sanitization/page.tsx`: same `?txn=` param handling and `saveRecentReport()` integration
+
+**Notable decisions:**
+- Quick-nav passes `?txn=` param (transaction number, not UUID) to report pages. Report pages resolve the number to UUID via a Supabase lookup on mount — this keeps URLs human-readable and shareable.
+- `saveRecentReport()` called after `setReportData()` in disposition, and after the empty-check guard in sanitization (so failed generations don't pollute recent reports).
+- localStorage chosen over session storage so recent reports persist across browser sessions.

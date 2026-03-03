@@ -301,15 +301,15 @@
 - [x] Same print CSS treatment as disposition report
 - [x] "Print" and "Download Data" buttons
 
-### 3.3 — Reports Hub
-- [ ] Build `app/(app)/reports/page.tsx` — Reports landing page
-- [ ] Cards for each report type with description and quick-search:
+### 3.3 — Reports Hub ✅
+- [x] Build `app/(app)/reports/page.tsx` — Reports landing page
+- [x] Cards for each report type with description and quick-search:
   - Certificate of Disposition
   - Certificate of Sanitization
   - Certificate of Data Destruction
   - Certificate of Recycling
-- [ ] Recent reports generated (stored in local storage or session)
-- [ ] Quick link: Enter transaction number → choose which report to generate
+- [x] Recent reports generated (stored in local storage or session)
+- [x] Quick link: Enter transaction number → choose which report to generate
 
 ### 3.4 — Certificate of Data Destruction
 - [ ] Build `app/(app)/reports/destruction/page.tsx` — Search/generate form
@@ -481,6 +481,6 @@
 | Phase 0: Foundation | Complete | 0.1 ✅, 0.2 ✅, 0.2b ✅, 0.3 ✅, 0.4 ✅ |
 | Phase 1: Core Data Entry | Complete | 1.1 ✅, 1.2 ✅, 1.3 ✅, 1.4 ✅ |
 | Phase 2: Asset Processing | Complete | 2.1 ✅, 2.2 ✅, 2.3 ✅, 2.4 ✅ |
-| Phase 3: Reports | In Progress | 3.1 ✅, 3.2 ✅; 3.3 Landing Page next (or 3.4 Data Destruction) |
+| Phase 3: Reports | In Progress | 3.1 ✅, 3.2 ✅, 3.3 ✅; 3.4 Data Destruction next |
 | Phase 4: Dashboard, Admin & Analytics | Not Started | Dashboard + analytics, Admin (users, routing rules, field defs, buyers), Performance, A11y, Inventory Management |
 | Phase 5: Deploy & Migration | Not Started | Vercel, Production, Caspio Data Migration (internal_asset_ids, inventory records, asset_hardware → JSONB, drive-level sanitization) |
