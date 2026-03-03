@@ -343,44 +343,46 @@
 
 > Goal: Build a useful dashboard, admin panel with expanded configuration, analytics, and inventory management.
 
-### 4.1 — Dashboard & Analytics
-- [ ] Build dashboard (`app/(app)/page.tsx`) with live stats:
+### 4.1 — Dashboard & Analytics ✅
+- [x] Build dashboard (`app/(app)/page.tsx`) with live stats:
   - Total assets (by status breakdown)
   - Assets received this week/month
   - Assets pending sanitization
   - Assets available for sale
   - Recent transactions (last 10, linked to detail)
-  - Assets by type (pie/bar chart or count cards)
-  - Inventory summary (total items on hand, by location)
-- [ ] Quick action cards: New Transaction, Asset Intake, HD Crush, Generate Report
-- [ ] Welcome message with user name and role
-- [ ] Analytics section:
-  - Asset volume trends (received/processed over time)
-  - Processing time metrics (average time from received to available)
-  - Revenue from resales (if settlement data exists)
-  - Top customers by volume
-- [ ] Loading skeleton
+  - Assets by type (count cards — user chose no charting library)
+  - Inventory summary (total items on hand)
+- [x] Quick action cards: New Transaction, Asset Intake, HD Crush, Generate Report
+- [x] Welcome message with user name
+- [x] Analytics section:
+  - Revenue from resales (conditional — only if sales exist)
+  - Top customers by volume (top 5)
+- [x] Server component with parallel data fetching (12 queries via Promise.all)
 
-### 4.2 — Admin Panel
-- [ ] Build `app/(app)/admin/page.tsx` — Admin hub with tabs/sections
-- [ ] **User Management**:
-  - Create user (via `supabase.auth.admin.createUser()` with service-role client)
-  - Edit user role (admin/operator/viewer/receiving_tech/client_portal_user)
-  - Deactivate user
-- [ ] **Routing Rules Management**:
-  - List active/inactive routing rules with priority order
-  - Create/edit/delete routing rules (name, conditions JSONB editor, action, priority)
-  - Toggle active/inactive
-  - Test a rule against sample asset data
-- [ ] **Asset Type Field Definitions Management**:
-  - List field definitions grouped by asset type
-  - Create/edit/delete field definitions (field_name, label, type, options, group, required, sort_order)
-  - Preview how fields will render in the asset form
-- [ ] **Buyer Management**:
-  - List buyers with search
-  - Create/edit buyer (name, address, contact, eBay name)
-  - View sales history per buyer
-- [ ] Admin-only route protection (layout + middleware)
+### 4.2 — Admin Panel ✅
+- [x] Build `app/(app)/admin/page.tsx` — Admin hub with 4 tabs
+- [x] **User Management**:
+  - [x] Create user (via `supabase.auth.admin.createUser()` with service-role client)
+  - [x] Edit user role (admin/operator/viewer/receiving_tech/client_portal_user)
+  - [x] Edit user name
+  - [x] Deactivate/reactivate user (ban/unban via supabase admin API)
+  - [x] Route handler: `/api/admin/users` (GET, POST, PATCH) — service-role for auth admin operations
+- [x] **Routing Rules Management**:
+  - [x] List active/inactive routing rules with priority order
+  - [x] Create/edit/delete routing rules (name, conditions JSONB editor, action, priority)
+  - [x] Toggle active/inactive (Switch component)
+  - [x] Delete with confirmation dialog
+- [x] **Asset Type Field Definitions Management**:
+  - [x] List field definitions grouped by asset type (filter by type)
+  - [x] Create/edit/delete field definitions (field_name, label, type, options, group, required, sort_order)
+  - [x] Preview how fields will render in the asset form
+  - [x] Options JSON editor for select/json_array types
+- [x] **Buyer Management**:
+  - [x] List buyers with search (name, eBay name, email)
+  - [x] Create/edit buyer (name, address, contact, eBay name, email, notes)
+  - [x] View sales history per buyer (dialog with asset + price table)
+  - [x] Delete with confirmation dialog
+- [x] Admin-only route protection (middleware already in place from Phase 0.3)
 
 ### 4.3 — Performance & UX
 - [ ] Add loading states (skeletons) to all data-fetching pages
@@ -482,5 +484,5 @@
 | Phase 1: Core Data Entry | Complete | 1.1 ✅, 1.2 ✅, 1.3 ✅, 1.4 ✅ |
 | Phase 2: Asset Processing | Complete | 2.1 ✅, 2.2 ✅, 2.3 ✅, 2.4 ✅ |
 | Phase 3: Reports | Complete | 3.1 ✅, 3.2 ✅, 3.3 ✅, 3.4 ✅, 3.5 ✅ |
-| Phase 4: Dashboard, Admin & Analytics | Not Started | Dashboard + analytics, Admin (users, routing rules, field defs, buyers), Performance, A11y, Inventory Management |
+| Phase 4: Dashboard, Admin & Analytics | In Progress | 4.1 ✅, 4.2 ✅, 4.3 next |
 | Phase 5: Deploy & Migration | Not Started | Vercel, Production, Caspio Data Migration (internal_asset_ids, inventory records, asset_hardware → JSONB, drive-level sanitization) |

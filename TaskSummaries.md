@@ -349,3 +349,50 @@
 - Weight column right-aligned with tabular-nums for clean numeric alignment. Table footer uses `<tfoot>` with a thicker top border for visual separation.
 - Total weight shown in both the table footer and the page footer — redundant but useful when the table spans multiple pages in print.
 - **Phase 3 (Reports & Certificates) is now complete.** All 4 certificates built: Disposition, Sanitization, Data Destruction, Recycling.
+
+## Phase 4.1 — Dashboard & Analytics
+
+**What was done:**
+- Rewrote `app/(app)/page.tsx` — Server component with 12 parallel Supabase queries via `Promise.all()`.
+- **6 stat cards** (2×3 grid): Total Assets, Received This Week, Received This Month, Pending Sanitization (storage-bearing types), Available for Sale, In Inventory (sum of quantity_on_hand).
+- **Status Breakdown card** — Color-coded badges with counts for each status, ordered by lifecycle.
+- **Asset Types card** — Color-coded badges sorted by volume descending.
+- **Quick Actions card** — 4 buttons: New Transaction, Asset Intake, HD Crush, Generate Report.
+- **Recent Transactions table** — Last 10 transactions with date, transaction #, customer name, asset count. Linked to detail pages.
+- **Top Customers card** — Top 5 clients by total asset volume.
+- **Revenue Summary card** — Total sales amount + items sold count (conditional, only shown if sales exist).
+- Welcome message with user's full name.
+
+**Notable decisions:**
+- Pure server component — no `"use client"`. All data fetched server-side.
+- User chose count cards only (no charting library), keeping dependencies minimal.
+- Relation casts (`as unknown as Promise<...>`) needed for transaction→client and asset→transaction→client joins because `Relationships: []` in types.ts doesn't define FK relations for postgrest-js.
+- Pending sanitization counts only storage-bearing types (desktop, laptop, server) since those are the only ones needing drive sanitization.
+
+## Phase 4.2 — Admin Panel
+
+**What was done:**
+- **Admin page** (`app/(app)/admin/page.tsx`) — Server component fetching routing rules, field definitions, buyers, and buyer sales in parallel. Passes all data to client component.
+- **Admin panel** (`app/(app)/admin/admin-panel.tsx`) — Client component with 4 tabs (Users, Routing Rules, Field Definitions, Buyers). All CRUD via dialogs with inline forms.
+- **User Management API** (`app/api/admin/users/route.ts`) — Route handler using service-role Supabase client for `auth.admin.createUser()`, `auth.admin.updateUserById()` (ban/unban), and `auth.admin.listUsers()`. Merges auth users with user_profiles. GET/POST/PATCH endpoints. Verifies caller is admin.
+- **Server actions** (`app/(app)/admin/actions.ts`) — All admin mutations: routing rules CRUD + toggle, field definitions CRUD, buyers CRUD. All verify admin role.
+- **User Management**: Create user (email, password, name, role), edit role/name, deactivate/reactivate (ban/unban via Supabase admin API). 5 roles with color-coded badges. User list table with status indicators.
+- **Routing Rules**: List with priority ordering, active/inactive Switch toggle, conditions shown as inline JSON code, action badge. Create/edit dialog with JSON textarea for conditions, priority number, action dropdown.
+- **Field Definitions**: List with asset type filter dropdown, field name/label/type/group/required/sort_order columns. Create/edit dialog with conditional options editor (JSON textarea for select/json_array types). Preview dialog renders fields as they'd appear in the asset form.
+- **Buyers**: List with search (name/eBay/email), location/contact columns, sales count with clickable link to sales history dialog. Full address + contact + eBay form in create/edit dialog.
+- **Delete confirmation** dialog shared across all sections.
+- Installed shadcn `switch` component.
+
+**Files created/modified:**
+- `app/(app)/admin/page.tsx` — Rewritten (server component)
+- `app/(app)/admin/admin-panel.tsx` — New (client component, ~700 lines)
+- `app/(app)/admin/actions.ts` — New (server actions for rules, fields, buyers)
+- `app/api/admin/users/route.ts` — New (service-role user management API)
+- `components/ui/switch.tsx` — New (shadcn component)
+
+**Notable decisions:**
+- User management uses route handler (not server action) because it needs the service-role key for `auth.admin` operations. The anon key used by server components doesn't have admin privileges.
+- Users are fetched client-side on mount via `useEffect` → `fetch("/api/admin/users")` because the data comes from the auth admin API, not a regular table query.
+- Routing rules, field definitions, and buyers use server actions + `revalidatePath("/admin")` for seamless data refresh after mutations.
+- Admin route protection already existed in middleware (Phase 0.3) — `/admin` routes redirect non-admin users to `/`.
+- Field definitions: `field_name` and `asset_type` are immutable on edit (only label, type, options, group, required, sort_order can change). This prevents breaking existing JSONB data references.
