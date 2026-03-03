@@ -240,3 +240,25 @@
 - Used explicit UUIDs for transactions and assets (predictable pattern: `a0000001-...` for transactions, `b0000001-...` for assets) so dependent records (inventory, journal, status history) can reference them
 - Client IDs resolved via subquery (`SELECT id FROM clients WHERE account_number = ...`) — no hardcoded client UUIDs
 - UUID columns need `::text` cast for `LIKE` operator in PostgreSQL — pure UUID type doesn't support pattern matching
+
+## Phase 2.3 — HD Crush Workflow
+
+**What was done:**
+- Built `app/(app)/hd-crush/page.tsx` — replaced placeholder with PageHeader + HdCrushForm
+- Built `app/(app)/hd-crush/actions.ts` — three server actions:
+  - `suggestDriveSerials` — ILIKE typeahead query on `asset_hard_drives.serial_number`, returns top 10 matches with manufacturer/size
+  - `searchDriveBySerial` — exact match lookup, joins to parent asset + transaction + client, fetches all sibling drives
+  - `crushHardDrive` — updates drive-level sanitization fields (method=destruct_shred, date, tech, validation). If all drives on asset are sanitized: auto-creates/updates `asset_sanitization` record AND auto-advances asset status to 'sanitized' with audit log
+- Built `components/forms/hd-crush-form.tsx` — client form with:
+  - Typeahead autocomplete dropdown (debounced 300ms, min 2 chars, keyboard nav, click outside to close)
+  - Parent asset card with internal_asset_id, serial, type, MFG, model, status, transaction, customer + Detail/Edit links
+  - All drives table with status badges (Destroyed/Wiped/Clear-Overwrite/Pending), crush date, tech
+  - Per-drive "Crush" button opens inline form that auto-scrolls into view (scrollIntoView smooth/center)
+  - Success banner after crush, noting if all drives are now sanitized
+  - Auto re-searches after crush to refresh drive statuses
+
+**Notable decisions:**
+- Used server actions (not route handlers) since this workflow doesn't need to preserve client state across submissions — the re-search after crush handles refresh
+- Typeahead uses ILIKE with `%query%` pattern (not just prefix match) so partial serial matches work
+- Auto-advance to 'sanitized' only triggers from pre-sanitized states (received, in_process, tested, graded) — won't downgrade an 'available' or 'sold' asset
+- Scroll-into-view on crush form selection addresses UX feedback about the form being invisible below the fold

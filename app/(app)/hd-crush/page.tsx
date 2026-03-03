@@ -1,15 +1,14 @@
 import { PageHeader } from "@/components/layout/page-header"
+import { HdCrushForm } from "@/components/forms/hd-crush-form"
 
 export default function HdCrushPage() {
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       <PageHeader
         title="HD Crush"
-        description="Hard drive destruction workflow"
+        description="Search by hard drive serial number to record physical destruction"
       />
-      <p className="text-sm text-muted-foreground">
-        HD Crush workflow will be built in Phase 2.3.
-      </p>
+      <HdCrushForm />
     </div>
   )
 }

@@ -238,19 +238,19 @@
 - [x] Show settlement info if sold (sale amount, client share, logista share)
 - [x] Show status history timeline with who/when/what
 
-### 2.3 — HD Crush Workflow
-- [ ] Build `app/(app)/hd-crush/page.tsx`
-- [ ] Step 1: Search by hard drive serial number
-- [ ] Step 2: Display matching asset with key info (internal_asset_id, serial, type, customer, transaction)
-- [ ] Step 3: Show hard drive details with drive-level sanitization fields:
+### 2.3 — HD Crush Workflow ✅
+- [x] Build `app/(app)/hd-crush/page.tsx`
+- [x] Step 1: Search by hard drive serial number (with typeahead autocomplete)
+- [x] Step 2: Display matching asset with key info (internal_asset_id, serial, type, customer, transaction)
+- [x] Step 3: Show hard drive details with drive-level sanitization fields:
   - Sanitization method (Destruct/Shred)
   - Crush date
   - Sanitization tech
   - Validation status
-- [ ] Step 4: Enter crush date, confirm
-- [ ] On submit: update drive-level sanitization fields on `asset_hard_drives` row
-- [ ] If all hard drives in asset are sanitized, auto-update device-level sanitization status
-- [ ] Show "Details" and "Edit" links to parent asset
+- [x] Step 4: Enter crush date, confirm (form scrolls into view on selection)
+- [x] On submit: update drive-level sanitization fields on `asset_hard_drives` row
+- [x] If all hard drives in asset are sanitized, auto-update device-level sanitization status
+- [x] Show "Details" and "Edit" links to parent asset
 
 ### 2.4 — Global Search
 - [ ] Build `app/api/search/route.ts` — search across assets (serial_number + internal_asset_id + model), transactions (number), clients (name, account), inventory (location, part)
@@ -480,7 +480,7 @@
 |-------|--------|-------|
 | Phase 0: Foundation | Complete | 0.1 ✅, 0.2 ✅, 0.2b ✅, 0.3 ✅, 0.4 ✅ |
 | Phase 1: Core Data Entry | Complete | 1.1 ✅, 1.2 ✅, 1.3 ✅, 1.4 ✅ |
-| Phase 2: Asset Processing | In Progress | 2.1 ✅, 2.2 ✅; 2.3 HD Crush Workflow next |
+| Phase 2: Asset Processing | In Progress | 2.1 ✅, 2.2 ✅, 2.3 ✅; 2.4 Global Search next |
 | Phase 3: Reports | Not Started | Disposition, Sanitization (drive-level), Data Destruction, Recycling |
 | Phase 4: Dashboard, Admin & Analytics | Not Started | Dashboard + analytics, Admin (users, routing rules, field defs, buyers), Performance, A11y, Inventory Management |
 | Phase 5: Deploy & Migration | Not Started | Vercel, Production, Caspio Data Migration (internal_asset_ids, inventory records, asset_hardware → JSONB, drive-level sanitization) |
