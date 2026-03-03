@@ -323,3 +323,16 @@
 - Quick-nav passes `?txn=` param (transaction number, not UUID) to report pages. Report pages resolve the number to UUID via a Supabase lookup on mount — this keeps URLs human-readable and shareable.
 - `saveRecentReport()` called after `setReportData()` in disposition, and after the empty-check guard in sanitization (so failed generations don't pollute recent reports).
 - localStorage chosen over session storage so recent reports persist across browser sessions.
+
+## Phase 3.4 — Certificate of Data Destruction
+
+**What was done:**
+- Built `components/reports/data-destruction-certificate.tsx` — Certificate with NIST 800-88 physical destruction certification text, 6-column table (Asset SN, Asset Type, MFG, MFG Model, Hard Drive SN, Crush Date). Footer shows total assets + total drives destroyed. Same Logista branding, print CSS, CSV download pattern.
+- Built `app/(app)/reports/destruction/page.tsx` — Page with TransactionSelect, fetches assets with `asset_hard_drives` filtered to `sanitization_method = 'destruct_shred'`. Integrated with `?txn=` param and `saveRecentReport()`.
+- Updated `app/(app)/reports/page.tsx` — Marked destruction card as `ready: true`.
+
+**Notable decisions:**
+- Filters strictly to `sanitization_method = 'destruct_shred'` on `asset_hard_drives` (not device-level sanitization, not wipe method). Only physical destruction counts.
+- Display: one row per asset with drive serials space-separated and latest crush date (same pattern as sanitization certificate). CSV: one row per drive for granular export.
+- Footer includes "Total Drives Destroyed" count alongside asset count — useful for auditors verifying drive counts match manifests.
+- 6 columns (no Description column) since destruction cert focuses on hardware identity + drive tracking, not asset descriptions.
