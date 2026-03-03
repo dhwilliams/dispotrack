@@ -226,17 +226,17 @@
 - [x] Click row → navigate to asset edit page
 - [x] Bulk select with checkboxes for bulk operations (batch status update, batch destination change via /api/assets/bulk)
 
-### 2.2 — Asset Detail View
-- [ ] Build `app/(app)/assets/[id]/page.tsx` — Read-only detail view
-- [ ] Display `internal_asset_id` prominently at top with copy button
-- [ ] Same tabbed layout as edit form but read-only display
-- [ ] "Edit" button → navigates to edit page
-- [ ] Show full transaction context (customer info, special instructions)
-- [ ] Show hard drives in a clean table (not 24 empty rows) with per-drive sanitization status
-- [ ] Show photos gallery
-- [ ] Show inventory position (current location, quantity, journal history)
-- [ ] Show settlement info if sold (sale amount, client share, logista share)
-- [ ] Show status history timeline with who/when/what
+### 2.2 — Asset Detail View ✅
+- [x] Build `app/(app)/assets/[id]/page.tsx` — Read-only detail view
+- [x] Display `internal_asset_id` prominently at top with copy button
+- [x] Same tabbed layout as edit form but read-only display
+- [x] "Edit" button → navigates to edit page
+- [x] Show full transaction context (customer info, special instructions)
+- [x] Show hard drives in a clean table (not 24 empty rows) with per-drive sanitization status
+- [ ] Show photos gallery (deferred — needs Supabase Storage bucket)
+- [x] Show inventory position (current location, quantity, journal history)
+- [x] Show settlement info if sold (sale amount, client share, logista share)
+- [x] Show status history timeline with who/when/what
 
 ### 2.3 — HD Crush Workflow
 - [ ] Build `app/(app)/hd-crush/page.tsx`
@@ -480,7 +480,7 @@
 |-------|--------|-------|
 | Phase 0: Foundation | Complete | 0.1 ✅, 0.2 ✅, 0.2b ✅, 0.3 ✅, 0.4 ✅ |
 | Phase 1: Core Data Entry | Complete | 1.1 ✅, 1.2 ✅, 1.3 ✅, 1.4 ✅ |
-| Phase 2: Asset Processing | In Progress | 2.1 ✅; 2.2 Asset Detail View next |
+| Phase 2: Asset Processing | In Progress | 2.1 ✅, 2.2 ✅; 2.3 HD Crush Workflow next |
 | Phase 3: Reports | Not Started | Disposition, Sanitization (drive-level), Data Destruction, Recycling |
 | Phase 4: Dashboard, Admin & Analytics | Not Started | Dashboard + analytics, Admin (users, routing rules, field defs, buyers), Performance, A11y, Inventory Management |
 | Phase 5: Deploy & Migration | Not Started | Vercel, Production, Caspio Data Migration (internal_asset_ids, inventory records, asset_hardware → JSONB, drive-level sanitization) |

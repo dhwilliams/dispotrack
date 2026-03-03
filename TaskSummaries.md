@@ -208,3 +208,35 @@
 - Supabase CHECK constraint columns require literal union casts when filtering (same pattern as Phase 1.4 route handlers). Applied to both the page query and CSV export handler.
 - Bulk actions use `window.location.reload()` after applying — simple and ensures fresh server data. Could be optimized with router.refresh() later.
 - Sort on `transaction_date` falls back to `created_at` since Supabase doesn't support ordering by joined table columns directly. Acceptable for now.
+
+## Phase 2.2 — Asset Detail View
+
+**What was done:**
+- Built `components/forms/asset-form/asset-detail-view.tsx` — read-only tabbed view with 9 tabs: Product Info (with transaction context), Hardware (with HD table), Testing/Grading, Type-Specific (dynamic fields), Status, Sanitization, Sales (with settlement), Inventory (position + journal), History (timeline)
+- Built `app/(app)/assets/[id]/page.tsx` — server component fetching asset with transaction+client join, plus all related data (grading, type details, field definitions, hard drives, sanitization, sales, buyer, status history, inventory, inventory journal, settlement) via parallel `Promise.all`
+- Updated `components/tables/asset-table.tsx` — row click and Asset ID links changed from `/assets/[id]/edit` to `/assets/[id]` (detail view first, edit via button)
+- Uses `<dl>/<dt>/<dd>` pattern with `Field` and `BoolField` helper components for consistent read-only display
+- Label lookup maps for statuses, grades, sanitization methods, destinations, movement types
+- Inventory tab shows current position cards + journal table with +/- quantity coloring
+- Photos tab deferred (needs Supabase Storage bucket)
+
+**Notable decisions:**
+- Row click goes to detail page (not edit) — detail page has an "Edit" button. Better UX for browsing vs editing.
+- Settlement section shown conditionally within Sales tab when sale + settlement data exists.
+- Buyer info displayed inline when linked via buyer_id FK.
+
+## Seed Data — Transactions & Assets
+
+**What was done:**
+- Created `scripts/seed-transactions-assets.sql` — 10 transactions across all 10 seed clients with 72 assets total
+- All 9 asset types represented: desktop, laptop, server, monitor, printer, phone, network, other (bulk)
+- Assets at various lifecycle stages: received, in_process, tested, graded, sanitized, available, recycled
+- Includes hard drives (with some sanitized), grading records, device-level sanitization, destinations, inventory records + journal entries, full status history chains
+- One null serial (missing tag), one bulk-tracked item (cable lot, qty 25)
+- Script is idempotent — cleanup block at top deletes any prior seed data before inserting
+- Transaction numbers use `.99xxx` sequences to avoid conflicts with app-created data
+
+**Notable decisions:**
+- Used explicit UUIDs for transactions and assets (predictable pattern: `a0000001-...` for transactions, `b0000001-...` for assets) so dependent records (inventory, journal, status history) can reference them
+- Client IDs resolved via subquery (`SELECT id FROM clients WHERE account_number = ...`) — no hardcoded client UUIDs
+- UUID columns need `::text` cast for `LIKE` operator in PostgreSQL — pure UUID type doesn't support pattern matching

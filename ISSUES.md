@@ -66,3 +66,11 @@
 - Same for `sanitization_method` on `asset_sanitization` (`"wipe" | "destruct_shred" | ...`) and `details` on `asset_type_details` (`Json` vs `Record<string, unknown>`)
 - **Fix**: Cast each enum field to its literal union type (e.g., `as "C1" | "C2" | "C3" | "C4" | "C5"`), cast JSONB details to `Record<string, Json | undefined>`, widen `asset_destination` state to `string` since Select's `onValueChange` returns plain string
 - **Pattern**: Any Supabase column with a CHECK constraint generates a literal union type. When receiving values from `body: Record<string, unknown>`, always cast to the specific union, not just `string`.
+
+## Seed Data
+
+### Issue: PostgreSQL UUID columns don't support LIKE operator
+- `WHERE id LIKE 'b0000001-...'` fails with `operator does not exist: uuid ~~ unknown`
+- UUID is a distinct type in PostgreSQL, not implicitly castable to text for pattern matching
+- **Fix**: Use `id::text LIKE '...'` to explicitly cast UUID to text before pattern matching
+- Applies everywhere UUIDs are used with LIKE/ILIKE — cleanup queries, inventory/journal/status_history INSERTs that filter by asset ID pattern

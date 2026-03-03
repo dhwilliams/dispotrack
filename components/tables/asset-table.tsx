@@ -189,7 +189,7 @@ export function AssetTable({
   // ---- Row click ----
   const handleRowClick = useCallback(
     (id: string) => {
-      router.push(`/assets/${id}/edit`)
+      router.push(`/assets/${id}`)
     },
     [router],
   )
@@ -327,7 +327,7 @@ export function AssetTable({
                 {/* Internal Asset ID */}
                 <TableCell className="font-mono text-sm" onClick={(e) => e.stopPropagation()}>
                   <Link
-                    href={`/assets/${asset.id}/edit`}
+                    href={`/assets/${asset.id}`}
                     className="text-primary hover:underline"
                   >
                     {asset.internal_asset_id}
