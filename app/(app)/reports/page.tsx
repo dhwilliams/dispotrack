@@ -49,7 +49,7 @@ const reportTypes = [
       "Lists assets where drives were physically destroyed (crushed/shredded). Certifies physical media destruction.",
     href: "/reports/destruction",
     icon: HardDrive,
-    ready: false,
+    ready: true,
   },
   {
     key: "recycling",
