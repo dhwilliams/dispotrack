@@ -146,3 +146,37 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Print styles — hide app chrome, full-width content */
+@media print {
+  body {
+    background: white !important;
+  }
+
+  /* Hide sidebar, header, and any no-print elements */
+  nav,
+  aside,
+  header,
+  .no-print,
+  [data-slot="sidebar"],
+  [data-slot="header"] {
+    display: none !important;
+  }
+
+  /* Remove layout constraints */
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Flatten flex layout so content fills page */
+  body > div,
+  body > div > div,
+  body > div > div > div {
+    display: block !important;
+    overflow: visible !important;
+    height: auto !important;
+    width: 100% !important;
+  }
+}

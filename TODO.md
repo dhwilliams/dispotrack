@@ -266,10 +266,10 @@
 
 > Goal: Build the audit reports — Certificate of Disposition, Certificate of Sanitization, Certificate of Data Destruction, and Certificate of Recycling. These must look professional and match Logista's branding.
 
-### 3.1 — Certificate of Disposition
-- [ ] Build `app/(app)/reports/disposition/page.tsx` — Search/generate form
-- [ ] Input: Transaction number (search and select)
-- [ ] Generate report that includes:
+### 3.1 — Certificate of Disposition ✅
+- [x] Build `app/(app)/reports/disposition/page.tsx` — Search/generate form
+- [x] Input: Transaction number (search and select)
+- [x] Generate report that includes:
   - Logista logo (top right)
   - "Certificate of Disposition" title
   - Date generated
@@ -278,7 +278,7 @@
   - Certification text: "Logista hereby certifies that all assets specified in the equipment list attached are under control of Logista and shall be completely sanitized, refurbished, recycled and/or destroyed in accordance with all applicable County, State and Federal regulations on the date above."
   - Asset table: Asset Type, Description, Asset SN, MFG, MFG Model, Asset Tag
   - "Search Again" and "Download Data" actions
-- [ ] Print-optimized CSS (@media print):
+- [x] Print-optimized CSS (@media print):
   - Hide nav, header, search bar
   - Clean table borders
   - Logista branding preserved
@@ -481,6 +481,6 @@
 | Phase 0: Foundation | Complete | 0.1 ✅, 0.2 ✅, 0.2b ✅, 0.3 ✅, 0.4 ✅ |
 | Phase 1: Core Data Entry | Complete | 1.1 ✅, 1.2 ✅, 1.3 ✅, 1.4 ✅ |
 | Phase 2: Asset Processing | Complete | 2.1 ✅, 2.2 ✅, 2.3 ✅, 2.4 ✅ |
-| Phase 3: Reports | Not Started | Disposition, Sanitization (drive-level), Data Destruction, Recycling |
+| Phase 3: Reports | In Progress | 3.1 ✅; 3.2 Sanitization next |
 | Phase 4: Dashboard, Admin & Analytics | Not Started | Dashboard + analytics, Admin (users, routing rules, field defs, buyers), Performance, A11y, Inventory Management |
 | Phase 5: Deploy & Migration | Not Started | Vercel, Production, Caspio Data Migration (internal_asset_ids, inventory records, asset_hardware → JSONB, drive-level sanitization) |

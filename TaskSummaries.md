@@ -277,3 +277,19 @@
 - Controlled open state lives in Header, passed to CommandPalette as props — allows both the search button click and Cmd+K shortcut to control the same dialog.
 - Asset results show internal_asset_id (monospace) + manufacturer/model + serial number + colored status badge. Transaction results show number + client name + date. Client results show name + account number. Inventory results show location + description + quantity.
 - Phase 2 is now complete.
+
+## Phase 3.1 — Certificate of Disposition
+
+**What was done:**
+- Built `app/(app)/reports/disposition/page.tsx` — Client component with transaction search form (reuses TransactionSelect), generates certificate on selection. Fetches transaction + client + all assets with type details via Supabase client-side queries.
+- Built `components/reports/disposition-certificate.tsx` — Full certificate matching Caspio format: centered serif title, Logista logo (top right), generated date, transaction number, customer name + full address, formal certification text, 6-column asset table (Asset Type, Description, Asset SN, MFG, MFG Model, Asset Tag) with teal header row. Includes Print, Download CSV, and Search Again action buttons.
+- Updated `app/(app)/reports/page.tsx` — Replaced placeholder with card grid for 4 certificate types. Disposition is active/linked, others show "Coming soon" with dimmed styling.
+- Added global print CSS to `app/globals.css` — `@media print` rules hide sidebar, header, `.no-print` elements. Flattens flex layout for full-page printing.
+- Downloaded Logista logo from logistasolutions.com to `public/logista-logo.png` (540x304 PNG, dark version for white backgrounds).
+
+**Notable decisions:**
+- Used `<style jsx>` for certificate-specific styles (screen + print) rather than Tailwind classes — print CSS needs precise control over colors, fonts, and sizing that's easier with explicit CSS.
+- Certificate uses serif font for the title (matching Caspio original) while body text stays sans-serif.
+- Logo has `onError` handler to gracefully hide if file is missing — prevents broken image on deployments without the logo.
+- Reports landing page uses card grid with icon + description per certificate type, ready for future certificates to be wired in.
+- CSV download generates client-side Blob with proper escaping (double-quote wrapping, escaped inner quotes).
