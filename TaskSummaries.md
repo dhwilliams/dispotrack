@@ -262,3 +262,18 @@
 - Typeahead uses ILIKE with `%query%` pattern (not just prefix match) so partial serial matches work
 - Auto-advance to 'sanitized' only triggers from pre-sanitized states (received, in_process, tested, graded) — won't downgrade an 'available' or 'sold' asset
 - Scroll-into-view on crush form selection addresses UX feedback about the form being invisible below the fold
+
+## Phase 2.4 — Global Search
+
+**What was done:**
+- Built `app/api/search/route.ts` — GET route handler that searches 4 tables in parallel via `Promise.all`: assets (internal_asset_id, serial_number, model, manufacturer), transactions (transaction_number), clients (name, account_number), inventory (location, part_number, description). ILIKE pattern matching, limited results per category.
+- Built `components/shared/command-palette.tsx` — Command palette using shadcn CommandDialog (cmdk-based). Controlled open/close props from header. Debounced input (300ms). Results grouped by type with counts, separators, and type-specific icons (Monitor, FileText, Users, Package). Status badges with color coding on asset results. Loading spinner. "Type at least 2 characters" hint.
+- Updated `components/layout/header.tsx` — Wired search button to open CommandPalette with controlled state. Replaced placeholder onClick with `setSearchOpen(true)`.
+- Updated `components/ui/command.tsx` — Added `shouldFilter` prop passthrough to `CommandDialog` so it can be forwarded to the inner `Command` component.
+- Click/Enter on a result navigates to the appropriate detail page. Escape or click outside to close.
+
+**Notable decisions:**
+- `shouldFilter={false}` on CommandDialog — since we do server-side search via the API, cmdk's built-in client-side filtering must be disabled. Without this, cmdk hides items whose `value` prop doesn't contain the search query, resulting in "9 results found" text but no visible items.
+- Controlled open state lives in Header, passed to CommandPalette as props — allows both the search button click and Cmd+K shortcut to control the same dialog.
+- Asset results show internal_asset_id (monospace) + manufacturer/model + serial number + colored status badge. Transaction results show number + client name + date. Client results show name + account number. Inventory results show location + description + quantity.
+- Phase 2 is now complete.

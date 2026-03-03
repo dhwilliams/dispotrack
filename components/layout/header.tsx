@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Badge } from "@/components/ui/badge"
@@ -13,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Search, User, LogOut } from "lucide-react"
+import { CommandPalette } from "@/components/shared/command-palette"
 
 interface HeaderProps {
   userEmail: string
@@ -30,6 +32,7 @@ const roleLabels: Record<string, string> = {
 
 export function Header({ userEmail, userName, userRole }: HeaderProps) {
   const router = useRouter()
+  const [searchOpen, setSearchOpen] = useState(false)
 
   async function handleSignOut() {
     const supabase = createClient()
@@ -43,9 +46,7 @@ export function Header({ userEmail, userName, userRole }: HeaderProps) {
       <Button
         variant="outline"
         className="h-9 w-64 justify-start gap-2 text-muted-foreground"
-        onClick={() => {
-          // Command palette will be implemented in Phase 2.4
-        }}
+        onClick={() => setSearchOpen(true)}
       >
         <Search className="h-4 w-4" />
         <span className="text-sm">Search...</span>
@@ -53,6 +54,8 @@ export function Header({ userEmail, userName, userRole }: HeaderProps) {
           <span className="text-xs">&#8984;</span>K
         </kbd>
       </Button>
+
+      <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

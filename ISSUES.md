@@ -74,3 +74,11 @@
 - UUID is a distinct type in PostgreSQL, not implicitly castable to text for pattern matching
 - **Fix**: Use `id::text LIKE '...'` to explicitly cast UUID to text before pattern matching
 - Applies everywhere UUIDs are used with LIKE/ILIKE — cleanup queries, inventory/journal/status_history INSERTs that filter by asset ID pattern
+
+## Phase 2.4
+
+### Issue: cmdk client-side filtering hides server-searched results
+- When using `CommandDialog` with server-side search, cmdk's built-in filtering compares the typed query against each `CommandItem`'s `value` prop
+- If the `value` doesn't contain the search term (e.g., searching "HP" but value is `asset-LR3-000001-SN123`), cmdk hides the item even though the API returned it
+- Result: "9 results found" footer text visible but no items rendered
+- **Fix**: Pass `shouldFilter={false}` to the `Command` component. Added `shouldFilter` prop passthrough to `CommandDialog` in `components/ui/command.tsx` since the shadcn default doesn't expose it.
