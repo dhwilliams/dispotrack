@@ -544,12 +544,14 @@ export default async function DashboardPage() {
               <div className="space-y-3">
                 {Object.entries(invStatusCounts).map(([status, data]) => (
                   <div key={status} className="flex items-center justify-between">
-                    <Badge
-                      variant="secondary"
-                      className={INV_STATUS_COLORS[status] ?? ""}
-                    >
-                      {formatStatus(status)}
-                    </Badge>
+                    <Link href={`/inventory?status=${status}`}>
+                      <Badge
+                        variant="secondary"
+                        className={`${INV_STATUS_COLORS[status] ?? ""} hover:opacity-80 cursor-pointer`}
+                      >
+                        {formatStatus(status)}
+                      </Badge>
+                    </Link>
                     <span className="text-sm tabular-nums">
                       <span className="font-medium">{data.qty}</span>
                       <span className="text-muted-foreground ml-1">
