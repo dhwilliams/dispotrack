@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { likePattern } from "@/lib/utils/sanitize"
 
 function escapeCsvField(value: string | null | undefined): string {
   if (value === null || value === undefined) return ""
@@ -33,6 +34,15 @@ const CSV_COLUMNS = [
 
 export async function GET(request: Request) {
   const supabase = await createClient()
+
+  // Auth check
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+  }
+
   const { searchParams } = new URL(request.url)
 
   const q = searchParams.get("q")
@@ -61,8 +71,9 @@ export async function GET(request: Request) {
 
   // Apply filters
   if (q) {
+    const p = likePattern(q)
     query = query.or(
-      `internal_asset_id.ilike.%${q}%,serial_number.ilike.%${q}%,model.ilike.%${q}%`,
+      `internal_asset_id.ilike.${p},serial_number.ilike.${p},model.ilike.${p}`,
     )
   }
   if (asset_type) query = query.eq("asset_type", asset_type as "desktop" | "server" | "laptop" | "monitor" | "printer" | "phone" | "tv" | "network" | "other")
@@ -71,7 +82,7 @@ export async function GET(request: Request) {
   if (destination) query = query.eq("asset_destination", destination as "external_reuse" | "recycle" | "internal_reuse" | "pending")
   if (available_for_sale)
     query = query.eq("available_for_sale", available_for_sale === "true")
-  if (bin) query = query.ilike("bin_location", `%${bin}%`)
+  if (bin) query = query.ilike("bin_location", likePattern(bin))
   if (date_from)
     query = query.gte("transactions.transaction_date", date_from)
   if (date_to)

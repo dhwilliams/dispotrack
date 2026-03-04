@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Plus } from "lucide-react"
+import { likePattern } from "@/lib/utils/sanitize"
 
 interface ClientsPageProps {
   searchParams: Promise<{ q?: string }>
@@ -27,7 +28,8 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
     .order("name")
 
   if (q) {
-    query = query.or(`name.ilike.%${q}%,account_number.ilike.%${q}%`)
+    const p = likePattern(q)
+    query = query.or(`name.ilike.${p},account_number.ilike.${p}`)
   }
 
   const { data: clients } = await query

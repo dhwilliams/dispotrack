@@ -453,3 +453,100 @@
 - Sidebar remains fixed 240px at all widths. A collapsible hamburger menu for < 1024px would be a larger feature, not needed for the "1024px tablet" requirement.
 - Zero custom `tabIndex` attributes existed in the codebase (excellent). Only added `tabIndex={0}` to asset table rows for keyboard activation.
 - All 10 admin panel icon-only buttons already had `title` attributes — only 2 buttons in other components were missing labels.
+
+## Phase 4.5 — Inventory Management
+
+**What was done:**
+- Built `app/(app)/inventory/page.tsx` — Stock on hand view as server component
+  - 8-column table: location, description, part #, linked asset, qty, UoM, status, actions
+  - Filters: search (location/part/description), status dropdown, location dropdown (dynamically populated), pagination (25/50/100)
+  - Linked assets clickable to asset detail page
+  - Color-coded status badges (available/reserved/in_process/quarantine)
+- Built `app/(app)/inventory/journal/page.tsx` — Read-only journal viewer
+  - 9-column table: date, type, asset, qty (+/-), from, to, reference, performed by, reason
+  - Filters: movement type, date range (from/to), location search, reference # search
+  - Quantity color-coded (green positive, red negative)
+  - Movement type badges color-coded (receipt/issue/transfer/split/correction/reversal)
+  - Joins user_profiles for performed_by name, assets for internal_asset_id
+- Built `app/(app)/inventory/actions.ts` — Three server actions:
+  - `transferStock`: Validates qty, creates/upserts destination inventory record, two journal entries (negative from source, positive to destination)
+  - `adjustStock`: Requires reason, creates reversal + correction journal entries (never edits)
+  - `splitBatch`: Validates total doesn't exceed on-hand, issues from source, creates N new inventory records + journal entries for sub-lots
+- Built `app/(app)/inventory/inventory-actions.tsx` — Client component with 3 action dialogs
+  - Transfer dialog: quantity input, destination location, optional reason
+  - Adjust dialog: new quantity input, required reason (creates reversal + correction)
+  - Split dialog: dynamic rows (add/remove), running total validation, per-row qty + location
+  - All use toast notifications and router.refresh() on success
+- Added inventory summary to dashboard (`app/(app)/page.tsx`):
+  - "Inventory by Status" card: status badge + qty total + record count per status
+  - "Recent Inventory Activity" card: last 5 journal entries with movement type badges + qty
+  - Both cards link to full inventory/journal pages
+- Added loading skeletons: `inventory/loading.tsx`, `inventory/journal/loading.tsx`
+
+**Files created/modified:**
+- `app/(app)/inventory/page.tsx` — Rewritten (was placeholder)
+- `app/(app)/inventory/actions.ts` — New (transferStock, adjustStock, splitBatch)
+- `app/(app)/inventory/inventory-actions.tsx` — New (client component with 3 dialogs)
+- `app/(app)/inventory/loading.tsx` — New (skeleton)
+- `app/(app)/inventory/journal/page.tsx` — New (journal viewer)
+- `app/(app)/inventory/journal/loading.tsx` — New (skeleton)
+- `app/(app)/page.tsx` — Updated (inventory summary cards + 2 new queries)
+
+**Notable decisions:**
+- Journal is strictly append-only — all actions create new entries, never edit existing ones. Adjustments create reversal + correction pair.
+- Transfer creates/upserts destination inventory record — if same asset already exists at destination location, quantity is added rather than creating duplicate.
+- Split batch reduces source qty and creates N new inventory records (one per sub-lot), each with its own journal entry.
+- Inventory page uses native HTML form + selects for GET filter submission (same pattern as asset list).
+- Dashboard queries inventory_journal separately from inventory for the "recent activity" widget.
+
+## Phase 5.1 — Production Hardening
+
+**What was done:**
+
+Security headers added to `next.config.ts`:
+- X-Content-Type-Options: nosniff
+- X-Frame-Options: DENY
+- Referrer-Policy: strict-origin-when-cross-origin
+- Permissions-Policy: camera=(), microphone=(), geolocation=()
+- Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+- X-DNS-Prefetch-Control: on
+
+Open redirect vulnerability fixed in `app/(auth)/callback/route.ts`:
+- `next` query param now validated to be a relative path (starts with `/`, not `//`)
+
+Auth checks added to unprotected routes:
+- `app/api/search/route.ts` — added `getUser()` check, returns 401 if not authenticated
+- `app/api/export/route.ts` — added `getUser()` check, returns 401 if not authenticated
+
+SQL LIKE injection prevention:
+- Created `lib/utils/sanitize.ts` with `escapeLike()` and `likePattern()` helpers
+- Escapes `%`, `_`, `\` in user input before passing to `.ilike()` / `.or()` calls
+- Applied to 9 files: assets page, clients page, transactions page, inventory page, journal page, reports page, HD crush actions, search route, export route
+
+Error handling hardened:
+- `app/(app)/inventory/actions.ts` — all 3 server actions now check journal insert errors
+- `app/api/assets/intake/route.ts` — inventory, journal, and status history inserts now have error checks
+- Removed unused `difference` variable in adjustStock
+
+**Env audit results (all pass):**
+- `.env.local` properly in `.gitignore`, not in git history
+- `SUPABASE_SERVICE_ROLE_KEY` only used in server-side code (route handlers + scripts)
+- `NEXT_PUBLIC_*` vars correctly used in client/server contexts
+- No hardcoded URLs or secrets in source code
+- No `any` types, no TODO comments, no missing directives
+
+**Files created/modified:**
+- `next.config.ts` — Rewritten (security headers)
+- `lib/utils/sanitize.ts` — New (escapeLike, likePattern)
+- `app/(auth)/callback/route.ts` — Open redirect fix
+- `app/api/search/route.ts` — Auth check + LIKE escaping
+- `app/api/export/route.ts` — Auth check + LIKE escaping
+- `app/(app)/assets/page.tsx` — LIKE escaping
+- `app/(app)/clients/page.tsx` — LIKE escaping
+- `app/(app)/transactions/page.tsx` — LIKE escaping
+- `app/(app)/inventory/page.tsx` — LIKE escaping
+- `app/(app)/inventory/journal/page.tsx` — LIKE escaping
+- `app/(app)/reports/page.tsx` — LIKE escaping
+- `app/(app)/hd-crush/actions.ts` — LIKE escaping
+- `app/(app)/inventory/actions.ts` — Journal error checks + unused var removal
+- `app/api/assets/intake/route.ts` — Error checks on inventory/journal/history inserts

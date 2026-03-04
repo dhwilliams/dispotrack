@@ -5,6 +5,7 @@ import { AssetFilters } from "@/components/tables/asset-filters"
 import { AssetListWrapper } from "@/components/tables/asset-list-wrapper"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
+import { likePattern } from "@/lib/utils/sanitize"
 import type { AssetRow } from "@/components/tables/asset-table"
 
 interface AssetsPageProps {
@@ -85,8 +86,9 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
 
   // Apply filters
   if (q) {
+    const p = likePattern(q)
     query = query.or(
-      `internal_asset_id.ilike.%${q}%,serial_number.ilike.%${q}%,model.ilike.%${q}%,asset_tag.ilike.%${q}%`,
+      `internal_asset_id.ilike.${p},serial_number.ilike.${p},model.ilike.${p},asset_tag.ilike.${p}`,
     )
   }
   if (asset_type) query = query.eq("asset_type", asset_type as "desktop" | "server" | "laptop" | "monitor" | "printer" | "phone" | "tv" | "network" | "other")
@@ -94,7 +96,7 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
   if (tracking_mode) query = query.eq("tracking_mode", tracking_mode as "serialized" | "bulk")
   if (destination) query = query.eq("asset_destination", destination as "external_reuse" | "recycle" | "internal_reuse" | "pending")
   if (available_for_sale) query = query.eq("available_for_sale", available_for_sale === "true")
-  if (bin) query = query.ilike("bin_location", `%${bin}%`)
+  if (bin) query = query.ilike("bin_location", likePattern(bin))
   if (date_from) query = query.gte("transactions.transaction_date", date_from)
   if (date_to) query = query.lte("transactions.transaction_date", date_to)
   if (client_id) query = query.eq("transactions.client_id", client_id)

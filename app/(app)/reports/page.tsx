@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
+import { likePattern } from "@/lib/utils/sanitize"
 import { PageHeader } from "@/components/layout/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -146,7 +147,7 @@ export default function ReportsPage() {
       const { data, error } = await supabase
         .from("transactions")
         .select("id, transaction_number, clients(name)")
-        .ilike("transaction_number", `%${q}%`)
+        .ilike("transaction_number", likePattern(q))
         .order("transaction_date", { ascending: false })
         .limit(1)
 

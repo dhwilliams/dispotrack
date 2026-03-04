@@ -398,19 +398,19 @@
 - [x] ARIA labels on icon-only buttons and custom controls
 
 ### 4.5 — Inventory Management
-- [ ] Build `app/(app)/inventory/page.tsx` — Stock on hand view
+- [x] Build `app/(app)/inventory/page.tsx` — Stock on hand view
   - Table: location, part/description, quantity on hand, unit of measure, status, linked asset
   - Filters: location, status, part number, asset type
   - Search by location or part
-- [ ] Build `app/(app)/inventory/journal/page.tsx` — Journal viewer
+- [x] Build `app/(app)/inventory/journal/page.tsx` — Journal viewer
   - Table: date, movement type, quantity, from/to location, reference, performed by, reason
   - Filters: movement type, date range, location, reference number
   - Read-only (append-only journal — no edits)
-- [ ] Build inventory actions:
+- [x] Build inventory actions:
   - Transfer stock (move between locations)
   - Adjust stock (correction via reversal + new entry)
   - Split batch (issue out bulk + receive in sub-batches)
-- [ ] Inventory summary on dashboard
+- [x] Inventory summary on dashboard
 
 ---
 
@@ -419,8 +419,8 @@
 > Goal: Deploy to Vercel, validate in production, and prepare for Caspio transition.
 
 ### 5.1 — Production Hardening
-- [ ] Add security headers to `next.config.ts` (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy)
-- [ ] Production audit: no hardcoded URLs, no unguarded env vars, all API routes have error handling
+- [x] Add security headers to `next.config.ts` (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy)
+- [x] Production audit: no hardcoded URLs, no unguarded env vars, all API routes have error handling
 - [ ] Test with realistic data volume (500+ assets per Caspio report screenshot)
 
 ### 5.2 — Production Deployment

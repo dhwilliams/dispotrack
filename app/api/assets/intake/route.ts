@@ -81,7 +81,7 @@ export async function POST(request: Request) {
   }
 
   // 2. Create inventory record
-  const { data: inventory } = await supabase
+  const { data: inventory, error: invError } = await supabase
     .from("inventory")
     .insert({
       asset_id: asset.id,
@@ -96,6 +96,11 @@ export async function POST(request: Request) {
     .select("id")
     .single()
 
+  if (invError) {
+    // Asset created but inventory failed — log but don't block
+    console.error("Inventory creation failed for asset", asset.id, invError.message)
+  }
+
   // 3. Get transaction number for journal reference
   const { data: txn } = await supabase
     .from("transactions")
@@ -105,7 +110,7 @@ export async function POST(request: Request) {
 
   // 4. Create inventory journal receipt entry
   if (inventory) {
-    await supabase.from("inventory_journal").insert({
+    const { error: journalError } = await supabase.from("inventory_journal").insert({
       inventory_id: inventory.id,
       asset_id: asset.id,
       transaction_id: transactionId,
@@ -116,10 +121,13 @@ export async function POST(request: Request) {
       reason: "Initial intake",
       performed_by: user.id,
     })
+    if (journalError) {
+      console.error("Journal entry failed for asset", asset.id, journalError.message)
+    }
   }
 
   // 5. Log initial status history
-  await supabase.from("asset_status_history").insert({
+  const { error: historyError } = await supabase.from("asset_status_history").insert({
     asset_id: asset.id,
     previous_status: null,
     new_status: "received",
@@ -127,6 +135,9 @@ export async function POST(request: Request) {
     explanation: `Asset received via transaction ${txn?.transaction_number ?? transactionId}`,
     changed_by: user.id,
   })
+  if (historyError) {
+    console.error("Status history failed for asset", asset.id, historyError.message)
+  }
 
   // 6. Evaluate routing rules
   let suggestedDisposition: string | null = null

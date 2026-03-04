@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Plus } from "lucide-react"
+import { likePattern } from "@/lib/utils/sanitize"
 
 interface TransactionsPageProps {
   searchParams: Promise<{ q?: string; client?: string; from?: string; to?: string }>
@@ -31,7 +32,7 @@ export default async function TransactionsPage({
     .order("created_at", { ascending: false })
 
   if (q) {
-    query = query.ilike("transaction_number", `%${q}%`)
+    query = query.ilike("transaction_number", likePattern(q))
   }
   if (client) {
     query = query.eq("client_id", client)
