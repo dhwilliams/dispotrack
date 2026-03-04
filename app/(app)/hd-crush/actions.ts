@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { likePattern } from "@/lib/utils/sanitize"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -57,7 +58,7 @@ export interface DriveSearchResult {
 export async function suggestDriveSerials(
   query: string,
 ): Promise<Array<{ serial_number: string; manufacturer: string | null; size: string | null }>> {
-  if (!query.trim() || query.trim().length < 2) return []
+  if (!query.trim()) return []
 
   const supabase = await createClient()
 
@@ -65,7 +66,7 @@ export async function suggestDriveSerials(
     .from("asset_hard_drives")
     .select("serial_number, manufacturer, size")
     .not("serial_number", "is", null)
-    .ilike("serial_number", `%${query.trim()}%`)
+    .ilike("serial_number", likePattern(query.trim()))
     .order("serial_number")
     .limit(10)
 

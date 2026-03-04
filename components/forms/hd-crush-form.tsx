@@ -97,7 +97,7 @@ export function HdCrushForm() {
 
     if (suggestTimerRef.current) clearTimeout(suggestTimerRef.current)
 
-    if (value.trim().length < 2) {
+    if (!value.trim()) {
       setSuggestions([])
       setShowSuggestions(false)
       return
