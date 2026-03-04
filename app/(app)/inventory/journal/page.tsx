@@ -67,11 +67,11 @@ export default async function JournalPage({ searchParams }: JournalPageProps) {
 
   const supabase = await createClient()
 
-  // Build query — join user_profiles for performed_by name
+  // Build query — join assets for internal_asset_id
   let query = supabase
     .from("inventory_journal")
     .select(
-      "*, user_profiles(full_name), assets(internal_asset_id)",
+      "*, assets(internal_asset_id)",
       { count: "exact" },
     )
     .order("performed_at", { ascending: false })
@@ -116,7 +116,6 @@ export default async function JournalPage({ searchParams }: JournalPageProps) {
       reason: string | null
       performed_by: string | null
       performed_at: string
-      user_profiles: { full_name: string | null } | null
       assets: { internal_asset_id: string } | null
     }> | null
     count: number | null
@@ -125,6 +124,19 @@ export default async function JournalPage({ searchParams }: JournalPageProps) {
   const totalCount = count ?? 0
   const totalPages = Math.ceil(totalCount / perPage)
   const rows = data ?? []
+
+  // Fetch performer names separately (user_profiles has no direct FK from journal)
+  const performerIds = [...new Set(rows.map((r) => r.performed_by).filter(Boolean))] as string[]
+  const performerMap: Record<string, string> = {}
+  if (performerIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("user_profiles")
+      .select("id, full_name")
+      .in("id", performerIds)
+    for (const p of profiles ?? []) {
+      if (p.full_name) performerMap[p.id] = p.full_name
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -262,7 +274,7 @@ export default async function JournalPage({ searchParams }: JournalPageProps) {
                     {row.reference_number ?? "—"}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {row.user_profiles?.full_name ?? "—"}
+                    {(row.performed_by ? performerMap[row.performed_by] : null) ?? "—"}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground max-w-48 truncate">
                     {row.reason ?? "—"}
