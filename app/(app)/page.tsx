@@ -116,6 +116,8 @@ export default async function DashboardPage() {
     { data: topCustomers },
     { data: salesData },
     { count: soldCount },
+    { data: inventoryStatusRows },
+    { data: recentJournalEntries },
   ] = await Promise.all([
     // 1. Total assets
     supabase.from("assets").select("*", { count: "exact", head: true }),
@@ -173,6 +175,16 @@ export default async function DashboardPage() {
       .from("assets")
       .select("*", { count: "exact", head: true })
       .eq("status", "sold"),
+
+    // 13. Inventory status breakdown
+    supabase.from("inventory").select("status, quantity_on_hand"),
+
+    // 14. Recent journal entries (last 5)
+    supabase
+      .from("inventory_journal")
+      .select("id, movement_type, quantity, from_location, to_location, reason, performed_at")
+      .order("performed_at", { ascending: false })
+      .limit(5),
   ])
 
   // ---------------------------------------------------------------------------
@@ -247,6 +259,41 @@ export default async function DashboardPage() {
   )
   const hasSales = (salesData ?? []).length > 0
 
+  // Inventory status breakdown
+  const invStatusCounts: Record<string, { count: number; qty: number }> = {}
+  for (const row of inventoryStatusRows ?? []) {
+    const s = row.status as string
+    if (!invStatusCounts[s]) invStatusCounts[s] = { count: 0, qty: 0 }
+    invStatusCounts[s].count += 1
+    invStatusCounts[s].qty += Number(row.quantity_on_hand ?? 0)
+  }
+
+  const INV_STATUS_COLORS: Record<string, string> = {
+    available: "bg-green-100 text-green-800",
+    reserved: "bg-purple-100 text-purple-800",
+    in_process: "bg-amber-100 text-amber-800",
+    quarantine: "bg-red-100 text-red-800",
+  }
+
+  const MOVEMENT_COLORS: Record<string, string> = {
+    receipt: "bg-green-100 text-green-800",
+    issue: "bg-red-100 text-red-800",
+    transfer: "bg-blue-100 text-blue-800",
+    split: "bg-purple-100 text-purple-800",
+    correction: "bg-amber-100 text-amber-800",
+    reversal: "bg-slate-100 text-slate-800",
+  }
+
+  const recentJournal = (recentJournalEntries ?? []) as Array<{
+    id: string
+    movement_type: string
+    quantity: number
+    from_location: string | null
+    to_location: string | null
+    reason: string | null
+    performed_at: string
+  }>
+
   // Stat cards data
   const statCards = [
     { label: "Total Assets", value: totalAssets ?? 0, icon: Package },
@@ -300,12 +347,14 @@ export default async function DashboardPage() {
               <div className="space-y-3">
                 {sortedStatuses.map((status) => (
                   <div key={status} className="flex items-center justify-between">
-                    <Badge
-                      variant="secondary"
-                      className={STATUS_COLORS[status] ?? ""}
-                    >
-                      {formatStatus(status)}
-                    </Badge>
+                    <Link href={`/assets?status=${status}`}>
+                      <Badge
+                        variant="secondary"
+                        className={`${STATUS_COLORS[status] ?? ""} hover:opacity-80 cursor-pointer`}
+                      >
+                        {formatStatus(status)}
+                      </Badge>
+                    </Link>
                     <span className="text-sm font-medium tabular-nums">
                       {statusCounts[status]}
                     </span>
@@ -328,12 +377,14 @@ export default async function DashboardPage() {
               <div className="space-y-3">
                 {sortedTypes.map(([type, count]) => (
                   <div key={type} className="flex items-center justify-between">
-                    <Badge
-                      variant="secondary"
-                      className={TYPE_COLORS[type] ?? ""}
-                    >
-                      {capitalize(type)}
-                    </Badge>
+                    <Link href={`/assets?asset_type=${type}`}>
+                      <Badge
+                        variant="secondary"
+                        className={`${TYPE_COLORS[type] ?? ""} hover:opacity-80 cursor-pointer`}
+                      >
+                        {capitalize(type)}
+                      </Badge>
+                    </Link>
                     <span className="text-sm font-medium tabular-nums">{count}</span>
                   </div>
                 ))}
@@ -474,6 +525,79 @@ export default async function DashboardPage() {
             </Card>
           )}
         </div>
+      </div>
+
+      {/* Inventory Summary */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Inventory by Status */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base">Inventory by Status</CardTitle>
+            <Link href="/inventory" className="text-sm text-primary hover:underline">
+              View all
+            </Link>
+          </CardHeader>
+          <CardContent>
+            {Object.keys(invStatusCounts).length === 0 ? (
+              <p className="text-sm text-muted-foreground">No inventory yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {Object.entries(invStatusCounts).map(([status, data]) => (
+                  <div key={status} className="flex items-center justify-between">
+                    <Badge
+                      variant="secondary"
+                      className={INV_STATUS_COLORS[status] ?? ""}
+                    >
+                      {formatStatus(status)}
+                    </Badge>
+                    <span className="text-sm tabular-nums">
+                      <span className="font-medium">{data.qty}</span>
+                      <span className="text-muted-foreground ml-1">
+                        ({data.count} record{data.count !== 1 ? "s" : ""})
+                      </span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Recent Journal Activity */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base">Recent Inventory Activity</CardTitle>
+            <Link href="/inventory/journal" className="text-sm text-primary hover:underline">
+              View journal
+            </Link>
+          </CardHeader>
+          <CardContent>
+            {recentJournal.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No journal entries yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {recentJournal.map((entry) => (
+                  <div key={entry.id} className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Badge
+                        variant="secondary"
+                        className={`shrink-0 ${MOVEMENT_COLORS[entry.movement_type] ?? ""}`}
+                      >
+                        {formatStatus(entry.movement_type)}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground truncate">
+                        {entry.reason ?? (entry.to_location ? `→ ${entry.to_location}` : "—")}
+                      </span>
+                    </div>
+                    <span className={`text-sm tabular-nums font-medium shrink-0 ${entry.quantity < 0 ? "text-red-600" : "text-green-600"}`}>
+                      {entry.quantity > 0 ? "+" : ""}{entry.quantity}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
