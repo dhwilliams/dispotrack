@@ -18,6 +18,9 @@ import {
   Clock,
   ArrowRight,
   X,
+  Package,
+  DollarSign,
+  ClipboardList,
 } from "lucide-react"
 
 // ---------------------------------------------------------------------------
@@ -59,6 +62,33 @@ const reportTypes = [
       "Lists assets with destination = recycle. Certifies responsible recycling in compliance with regulations.",
     href: "/reports/recycling",
     icon: Recycle,
+    ready: true,
+  },
+  {
+    key: "received",
+    title: "Assets Received by Transaction",
+    description:
+      "Lists all assets received in a transaction with status, quantity, and date received.",
+    href: "/reports/received",
+    icon: ClipboardList,
+    ready: true,
+  },
+  {
+    key: "available",
+    title: "Available Assets",
+    description:
+      "Lists all assets currently available for sale across all transactions, with bin locations.",
+    href: "/reports/available",
+    icon: Package,
+    ready: true,
+  },
+  {
+    key: "sold",
+    title: "Assets Sold by Date Range",
+    description:
+      "Lists all sold assets within a date range, with buyer info, sale price, and revenue totals.",
+    href: "/reports/sold",
+    icon: DollarSign,
     ready: true,
   },
 ]
@@ -188,6 +218,9 @@ export default function ReportsPage() {
     sanitization: "Sanitization",
     destruction: "Data Destruction",
     recycling: "Recycling",
+    received: "Received",
+    available: "Available",
+    sold: "Sold",
   }
 
   return (
@@ -245,7 +278,7 @@ export default function ReportsPage() {
               </p>
               <div className="flex flex-wrap gap-2">
                 {reportTypes
-                  .filter((r) => r.ready)
+                  .filter((r) => r.ready && ["disposition", "sanitization", "destruction", "recycling", "received"].includes(r.key))
                   .map((r) => (
                     <Button
                       key={r.key}
@@ -263,9 +296,13 @@ export default function ReportsPage() {
         </CardContent>
       </Card>
 
-      {/* Report type cards */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {reportTypes.map((report) => {
+      {/* Audit Certificates */}
+      <div>
+        <h2 className="mb-3 text-sm font-medium text-muted-foreground uppercase tracking-wide">
+          Audit Certificates
+        </h2>
+        <div className="grid gap-4 md:grid-cols-2">
+        {reportTypes.filter((r) => ["disposition", "sanitization", "destruction", "recycling"].includes(r.key)).map((report) => {
           const Icon = report.icon
           const content = (
             <Card
@@ -306,6 +343,39 @@ export default function ReportsPage() {
 
           return <div key={report.title}>{content}</div>
         })}
+        </div>
+      </div>
+
+      {/* Operational Reports */}
+      <div>
+        <h2 className="mb-3 text-sm font-medium text-muted-foreground uppercase tracking-wide">
+          Operational Reports
+        </h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {reportTypes.filter((r) => ["received", "available", "sold"].includes(r.key)).map((report) => {
+          const Icon = report.icon
+          const content = (
+            <Card className="cursor-pointer transition-colors hover:border-primary/50">
+              <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                  <Icon className="h-5 w-5 text-primary" />
+                </div>
+                <CardTitle className="text-base">{report.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  {report.description}
+                </p>
+              </CardContent>
+            </Card>
+          )
+          return (
+            <Link key={report.key} href={report.href}>
+              {content}
+            </Link>
+          )
+        })}
+        </div>
       </div>
 
       {/* Recent reports */}

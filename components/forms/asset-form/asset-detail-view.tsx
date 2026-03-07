@@ -42,19 +42,27 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 const COSMETIC_LABELS: Record<string, string> = {
-  C1: "C1 — New",
-  C2: "C2 — Like New",
-  C3: "C3 — Good",
+  C0: "C0 — Not Categorized",
+  C1: "C1 — Damaged",
+  C2: "C2 — Used Poor",
+  C3: "C3 — Used Fair",
   C4: "C4 — Used Good",
-  C5: "C5 — Poor",
+  C5: "C5 — Used Very Good",
+  C6: "C6 — Used Excellent",
+  C7: "C7 — Certified Pre-Owned",
+  C8: "C8 — Unused",
+  C9: "C9 — New Open Box",
+  C10: "C10 — Recycle",
 }
 
 const FUNCTIONAL_LABELS: Record<string, string> = {
-  F1: "F1 — Fully Functional",
-  F2: "F2 — Minor Issues",
+  F1: "F1 — Collectible or Specialty Electronics",
+  F2: "F2 — Verified Specialty Electronics",
   F3: "F3 — Key Functions Working",
-  F4: "F4 — Major Issues",
-  F5: "F5 — Non-Functional",
+  F4: "F4 — Hardware Functional",
+  F5: "F5 — Refurbished",
+  F6: "F6 — Like New",
+  Recycle: "Recycle",
 }
 
 const SANITIZATION_LABELS: Record<string, string> = {
@@ -367,9 +375,12 @@ export function AssetDetailView({
             </CardContent>
           </Card>
           {["desktop", "server", "laptop"].includes(asset.asset_type) && hardDrives.length > 0 && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Drive-level sanitization is shown on each drive row in the Hardware tab.
-            </p>
+            <div className="mt-3 rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-200">
+              <p className="font-medium">Drive-level sanitization is shown on each drive row in the Hardware tab.</p>
+              <p className="mt-1 text-xs text-blue-600 dark:text-blue-300">
+                This tab shows device-level notes only. Per-drive sanitization method, date, and tech are on the Hardware tab.
+              </p>
+            </div>
           )}
         </TabsContent>
 

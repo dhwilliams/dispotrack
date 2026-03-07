@@ -117,8 +117,8 @@ async function handleGrading(
   body: Record<string, unknown>,
 ) {
   const grading = {
-    cosmetic_category: (body.cosmetic_category as "C1" | "C2" | "C3" | "C4" | "C5") || null,
-    functioning_category: (body.functioning_category as "F1" | "F2" | "F3" | "F4" | "F5") || null,
+    cosmetic_category: (body.cosmetic_category as "C0" | "C1" | "C2" | "C3" | "C4" | "C5" | "C6" | "C7" | "C8" | "C9" | "C10") || null,
+    functioning_category: (body.functioning_category as "F1" | "F2" | "F3" | "F4" | "F5" | "F6" | "Recycle") || null,
     does_unit_power_up: body.does_unit_power_up as boolean | null,
     does_unit_function_properly: body.does_unit_function_properly as boolean | null,
   }

@@ -435,11 +435,112 @@ Any issues or questions — ask me. When complete, provide a production readines
 Do not commit until I review. No co-authoring on commits.
 ```
 
-**5.2 — Production Deployment**
+**5.2 — Tester Feedback (Amber v1)**
+
+> This step has multiple sub-areas. Run them in sequence or parallel as appropriate.
+
+**5.2a — Transaction Number & Print Sheet**
+```
+@TODO.md @CLAUDE.md @.agents/ui-builder.md @.agents/api-architect.md @.agents/workflow-expert.md
+
+Mark the previous step as complete. Proceed with Phase 5.2a — Transaction Number & Print Sheet and ONLY that step.
+
+Use api-architect for transaction number validation (uniqueness check), workflow-expert for transaction number conventions, ui-builder for the printable transaction sheet. Use TaskCreate to track sub-tasks.
+
+Two items:
+1. Make transaction_number user-provided instead of auto-generated. Validate uniqueness on save. Update the create/edit forms to show an editable text input instead of auto-generated display.
+2. Transaction print sheet: one-page printable view (HTML + print CSS, same pattern as certificates). Include a barcode of the transaction number (use JsBarcode or Code128 SVG — lightweight, no server dependency). Should show transaction details, customer info, and asset summary.
+
+Any issues or questions — ask me. When complete, tell me how to test and what the next step is.
+
+Do not commit until I review. No co-authoring on commits.
+```
+
+**5.2b — Asset Intake Fixes (Serial Number)**
+```
+@TODO.md @CLAUDE.md @.agents/ui-builder.md @.agents/api-architect.md
+
+Mark the previous step as complete. Proceed with Phase 5.2b — Asset Intake Serial Number Fixes and ONLY that step.
+
+Use ui-builder for form UX changes, api-architect for duplicate check query. Use TaskCreate to track sub-tasks.
+
+Three items:
+1. Clear serial number field after each asset create in quick-add mode (keep transaction, type, manufacturer, model for batch entry — only reset serial_number and asset_tag).
+2. Soft warning on duplicate serial numbers: on blur or before submit, query assets.serial_number to check for existing matches. Show a warning banner but allow the user to override and save anyway.
+3. Strip dashes and spaces from serial numbers on input (`.replace(/[-\s]/g, '')`). Apply on blur so the user sees the cleaned value before submitting.
+
+Any issues or questions — ask me. When complete, tell me how to test and what the next step is.
+
+Do not commit until I review. No co-authoring on commits.
+```
+
+**5.2c — Grading System Update**
+```
+@TODO.md @CLAUDE.md @.agents/api-architect.md @.agents/ui-builder.md @.agents/workflow-expert.md
+
+Mark the previous step as complete. Proceed with Phase 5.2c — Grading System Update and ONLY that step.
+
+Use api-architect for the DB migration (CHECK constraint changes), ui-builder for form/badge/detail view updates, workflow-expert for grading definitions. Use TaskCreate to track sub-tasks.
+
+Updated cosmetic categories (C0–C10):
+- C0 Not Categorized, C1 Damaged, C2 Used Poor, C3 Used Fair, C4 Used Good, C5 Used Very Good, C6 Used Excellent, C7 Certified Pre-Owned, C8 Unused, C9 New Open Box, C10 Recycle
+
+Updated functional categories (F1–F6 + Recycle):
+- F1 Collectible or Specialty Electronics, F2 Verified Specialty Electronics, F3 Key Functions Working, F4 Hardware Functional, F5 Refurbished, F6 Like New, Recycle
+
+Steps:
+1. Write DB migration to ALTER CHECK constraints on asset_grading (cosmetic_category, functioning_category) to accept new values.
+2. Update all UI references: grading select dropdowns in edit form, grading display in detail view, any badge/label rendering, report columns.
+3. Update TypeScript types if grading enums are typed.
+
+Any issues or questions — ask me. When complete, tell me the manual SQL step and what to verify in the UI, and what the next step is.
+
+Do not commit until I review. No co-authoring on commits.
+```
+
+**5.2d — Desktop Field Definitions & Drive Sanitization Display**
+```
+@TODO.md @CLAUDE.md @.agents/api-architect.md @.agents/ui-builder.md
+
+Mark the previous step as complete. Proceed with Phase 5.2d — Desktop Fields & Drive Sanitization Display and ONLY that step.
+
+Use api-architect for field definition inserts and sanitization data queries, ui-builder for Hardware tab updates. Use TaskCreate to track sub-tasks.
+
+Two items:
+1. Add `ac_adapter` (boolean) and `screen_size` (text) to desktop asset_type_field_definitions. Write a migration INSERT (or seed SQL) for these two rows.
+2. Hardware tab drive sanitization display: when viewing the Hardware tab, each hard drive row should show its sanitization status inline (method, date, tech). Currently, sanitization updated via the Sanitization tab doesn't appear on the Hardware tab's drive listing. Ensure the Hardware tab query fetches drive-level sanitization fields and displays them. Also verify the sanitization report correctly pulls drive-level data for wiped (not just crushed) drives.
+
+Any issues or questions — ask me. When complete, tell me what to verify and what the next step is.
+
+Do not commit until I review. No co-authoring on commits.
+```
+
+**5.2e — New Operational Reports**
+```
+@TODO.md @CLAUDE.md @.agents/ui-builder.md @.agents/api-architect.md
+
+Mark the previous step as complete. Proceed with Phase 5.2e — New Operational Reports and ONLY that step.
+
+Use ui-builder for report page layouts (same pattern as existing certificates — HTML + print CSS), api-architect for data queries. Spawn parallel sub-agents for independent report pages. Use TaskCreate to track sub-tasks.
+
+Four items:
+1. Add prominent "Print / Save as PDF" button on all existing certificate reports (triggers `window.print()`). Place next to existing CSV download button.
+2. New report: Assets Received by Transaction — search/select by transaction number, table of all assets in that transaction with key columns (internal_asset_id, serial, type, manufacturer, model, status). CSV download + print.
+3. New report: Available Assets — all assets where `available_for_sale = true`. Table with key columns. CSV download + print.
+4. New report: Assets Sold by Date Range — date range picker, all assets where status = 'sold' and sold_date within range. Include sale price, buyer, sold date. CSV download + print.
+
+Add all 3 new reports as cards on the Reports Hub page. Follow the same layout and print CSS pattern as existing certificates.
+
+Any issues or questions — ask me. When complete, tell me how to test each report and what the next step is.
+
+Do not commit until I review. No co-authoring on commits.
+```
+
+**5.3 — Production Deployment**
 ```
 @TODO.md @CLAUDE.md @.agents/api-architect.md
 
-Mark the previous step as complete. Proceed with Phase 5.2 — Production Deployment and ONLY that step.
+Mark the previous step as complete. Proceed with Phase 5.3 — Production Deployment and ONLY that step.
 
 Use api-architect for environment variable configuration and production checks. Use TaskCreate to track sub-tasks.
 
@@ -448,11 +549,11 @@ Any issues or questions — ask me. When complete, list all manual Vercel dashbo
 Do not commit until I review. No co-authoring on commits.
 ```
 
-**5.3 — Data Migration**
+**5.4 — Data Migration**
 ```
 @TODO.md @CLAUDE.md @.agents/data-engineer.md @.agents/api-architect.md
 
-Mark the previous step as complete. Proceed with Phase 5.3 — Data Migration and ONLY that step.
+Mark the previous step as complete. Proceed with Phase 5.4 — Data Migration and ONLY that step.
 
 Use data-engineer for the Caspio-to-DispoTrack column mapping and migration script, api-architect for the target v2 schema. Use TaskCreate to track sub-tasks.
 

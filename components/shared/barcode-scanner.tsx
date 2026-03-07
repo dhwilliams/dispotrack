@@ -11,6 +11,7 @@ interface BarcodeScannerProps {
   value: string
   onChange: (value: string) => void
   onScan?: (value: string) => void
+  onBlur?: () => void
   disabled?: boolean
 }
 
@@ -26,6 +27,7 @@ export function BarcodeScanner({
   value,
   onChange,
   onScan,
+  onBlur,
   disabled,
 }: BarcodeScannerProps) {
   const bufferRef = useRef("")
@@ -71,6 +73,7 @@ export function BarcodeScanner({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
+        onBlur={onBlur}
         disabled={disabled}
         className="pr-9"
       />

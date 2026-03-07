@@ -238,8 +238,8 @@ export type Database = {
         Row: {
           id: string
           asset_id: string
-          cosmetic_category: 'C1' | 'C2' | 'C3' | 'C4' | 'C5' | null
-          functioning_category: 'F1' | 'F2' | 'F3' | 'F4' | 'F5' | null
+          cosmetic_category: 'C0' | 'C1' | 'C2' | 'C3' | 'C4' | 'C5' | 'C6' | 'C7' | 'C8' | 'C9' | 'C10' | null
+          functioning_category: 'F1' | 'F2' | 'F3' | 'F4' | 'F5' | 'F6' | 'Recycle' | null
           does_unit_power_up: boolean | null
           does_unit_function_properly: boolean | null
           created_at: string
@@ -248,8 +248,8 @@ export type Database = {
         Insert: {
           id?: string
           asset_id: string
-          cosmetic_category?: 'C1' | 'C2' | 'C3' | 'C4' | 'C5' | null
-          functioning_category?: 'F1' | 'F2' | 'F3' | 'F4' | 'F5' | null
+          cosmetic_category?: 'C0' | 'C1' | 'C2' | 'C3' | 'C4' | 'C5' | 'C6' | 'C7' | 'C8' | 'C9' | 'C10' | null
+          functioning_category?: 'F1' | 'F2' | 'F3' | 'F4' | 'F5' | 'F6' | 'Recycle' | null
           does_unit_power_up?: boolean | null
           does_unit_function_properly?: boolean | null
           created_at?: string
@@ -258,8 +258,8 @@ export type Database = {
         Update: {
           id?: string
           asset_id?: string
-          cosmetic_category?: 'C1' | 'C2' | 'C3' | 'C4' | 'C5' | null
-          functioning_category?: 'F1' | 'F2' | 'F3' | 'F4' | 'F5' | null
+          cosmetic_category?: 'C0' | 'C1' | 'C2' | 'C3' | 'C4' | 'C5' | 'C6' | 'C7' | 'C8' | 'C9' | 'C10' | null
+          functioning_category?: 'F1' | 'F2' | 'F3' | 'F4' | 'F5' | 'F6' | 'Recycle' | null
           does_unit_power_up?: boolean | null
           does_unit_function_properly?: boolean | null
           created_at?: string

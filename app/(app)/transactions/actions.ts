@@ -9,33 +9,20 @@ export type TransactionFormState = {
   fieldErrors?: Record<string, string>
 }
 
-async function generateTransactionNumber(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  date: string,
-): Promise<string> {
-  const dateStr = date.replace(/-/g, "")
-
-  const { count } = await supabase
-    .from("transactions")
-    .select("*", { count: "exact", head: true })
-    .like("transaction_number", `T${dateStr}.%`)
-
-  const sequence = ((count ?? 0) + 1).toString().padStart(5, "0")
-  return `T${dateStr}.${sequence}`
-}
-
 export async function createTransactionAction(
   _prevState: TransactionFormState,
   formData: FormData,
 ): Promise<TransactionFormState> {
   const supabase = await createClient()
 
+  const transactionNumber = formData.get("transaction_number") as string
   const clientId = formData.get("client_id") as string
   const transactionDate = formData.get("transaction_date") as string
   const specialInstructions = formData.get("special_instructions") as string
 
   // Validation
   const fieldErrors: Record<string, string> = {}
+  if (!transactionNumber?.trim()) fieldErrors.transaction_number = "Transaction number is required"
   if (!clientId?.trim()) fieldErrors.client_id = "Client is required"
   if (!transactionDate?.trim()) fieldErrors.transaction_date = "Transaction date is required"
   if (Object.keys(fieldErrors).length > 0) return { fieldErrors }
@@ -44,10 +31,8 @@ export async function createTransactionAction(
     data: { user },
   } = await supabase.auth.getUser()
 
-  const transactionNumber = await generateTransactionNumber(supabase, transactionDate)
-
   const { error } = await supabase.from("transactions").insert({
-    transaction_number: transactionNumber,
+    transaction_number: transactionNumber.trim(),
     transaction_date: transactionDate,
     client_id: clientId,
     special_instructions: specialInstructions || null,
@@ -72,11 +57,13 @@ export async function updateTransactionAction(
   const supabase = await createClient()
 
   const id = formData.get("id") as string
+  const transactionNumber = formData.get("transaction_number") as string
   const clientId = formData.get("client_id") as string
   const transactionDate = formData.get("transaction_date") as string
   const specialInstructions = formData.get("special_instructions") as string
 
   const fieldErrors: Record<string, string> = {}
+  if (!transactionNumber?.trim()) fieldErrors.transaction_number = "Transaction number is required"
   if (!clientId?.trim()) fieldErrors.client_id = "Client is required"
   if (!transactionDate?.trim()) fieldErrors.transaction_date = "Transaction date is required"
   if (Object.keys(fieldErrors).length > 0) return { fieldErrors }
@@ -84,6 +71,7 @@ export async function updateTransactionAction(
   const { error } = await supabase
     .from("transactions")
     .update({
+      transaction_number: transactionNumber.trim(),
       transaction_date: transactionDate,
       client_id: clientId,
       special_instructions: specialInstructions || null,
@@ -91,6 +79,9 @@ export async function updateTransactionAction(
     .eq("id", id)
 
   if (error) {
+    if (error.code === "23505") {
+      return { error: "A transaction with this number already exists." }
+    }
     return { error: error.message }
   }
 

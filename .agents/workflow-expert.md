@@ -49,8 +49,8 @@ Routing rules engine evaluates asset attributes (type, model age, screen size, c
 - Test key functionality (powers up, functions properly)
 - Record hardware specs via dynamic fields from `asset_type_field_definitions`: CPU, memory, hard drives (serial numbers), optical drive, etc.
 - Assign grades:
-  - **Cosmetic**: C1 (New) → C5 (Poor)
-  - **Functional**: F1 (Fully Functional) → F5 (Non-Functional)
+  - **Cosmetic**: C0 (Not Categorized) → C10 (Recycle)
+  - **Functional**: F1 (Collectible or Specialty Electronics) → F6 (Like New), Recycle
 - Laptop-specific: battery, webcam, screen, keyboard
 - Desktop-specific: chassis type (SFF Desktop, Tower, Mini Desktop, etc.)
 - Color is recorded for all

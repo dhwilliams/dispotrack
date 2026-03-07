@@ -63,19 +63,27 @@ const ASSET_TYPES = [
 ] as const
 
 const COSMETIC_GRADES = [
-  { value: "C1", label: "C1 — New" },
-  { value: "C2", label: "C2 — Like New" },
-  { value: "C3", label: "C3 — Good" },
+  { value: "C0", label: "C0 — Not Categorized" },
+  { value: "C1", label: "C1 — Damaged" },
+  { value: "C2", label: "C2 — Used Poor" },
+  { value: "C3", label: "C3 — Used Fair" },
   { value: "C4", label: "C4 — Used Good" },
-  { value: "C5", label: "C5 — Poor" },
+  { value: "C5", label: "C5 — Used Very Good" },
+  { value: "C6", label: "C6 — Used Excellent" },
+  { value: "C7", label: "C7 — Certified Pre-Owned" },
+  { value: "C8", label: "C8 — Unused" },
+  { value: "C9", label: "C9 — New Open Box" },
+  { value: "C10", label: "C10 — Recycle" },
 ]
 
 const FUNCTIONAL_GRADES = [
-  { value: "F1", label: "F1 — Fully Functional" },
-  { value: "F2", label: "F2 — Minor Issues" },
+  { value: "F1", label: "F1 — Collectible or Specialty Electronics" },
+  { value: "F2", label: "F2 — Verified Specialty Electronics" },
   { value: "F3", label: "F3 — Key Functions Working" },
-  { value: "F4", label: "F4 — Major Issues" },
-  { value: "F5", label: "F5 — Non-Functional" },
+  { value: "F4", label: "F4 — Hardware Functional" },
+  { value: "F5", label: "F5 — Refurbished" },
+  { value: "F6", label: "F6 — Like New" },
+  { value: "Recycle", label: "Recycle" },
 ]
 
 const SANITIZATION_METHODS = [
@@ -637,9 +645,13 @@ export function AssetEditForm({
             </CardContent>
           </Card>
           {["desktop", "server", "laptop"].includes(assetType) && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Drive-level sanitization is on each hard drive row in the Hardware tab.
-            </p>
+            <div className="mt-3 rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-200">
+              <p className="font-medium">Drive-level sanitization is managed on the Hardware tab.</p>
+              <p className="mt-1 text-xs text-blue-600 dark:text-blue-300">
+                Each hard drive has its own sanitization fields (method, date, tech, verification) on the Hardware tab.
+                This Sanitization tab is for device-level notes only.
+              </p>
+            </div>
           )}
           <SaveButton tab="sanitization" />
         </TabsContent>

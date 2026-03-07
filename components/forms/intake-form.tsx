@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useCallback } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -23,8 +23,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Loader2, Plus, ArrowRight } from "lucide-react"
+import { Loader2, Plus, ArrowRight, AlertTriangle } from "lucide-react"
 import { toast } from "sonner"
+import { createClient } from "@/lib/supabase/client"
 import { BarcodeScanner } from "@/components/shared/barcode-scanner"
 import { InternalIdDisplay } from "@/components/shared/internal-id-display"
 import { TransactionSelect } from "@/components/shared/transaction-select"
@@ -77,10 +78,28 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [lastCreated, setLastCreated] = useState<CreatedAsset | null>(null)
   const [createdAssets, setCreatedAssets] = useState<CreatedAsset[]>([])
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null)
 
   const serialRef = useRef<HTMLDivElement>(null)
 
-  function clearAssetFields() {
+  function clearForNextAsset() {
+    // Quick-add: only reset serial + asset tag, keep type/manufacturer/model for batch entry
+    setSerialNumber("")
+    setAssetTag("")
+    setWeight("")
+    setNotes("")
+    setError("")
+    setFieldErrors({})
+    setDuplicateWarning(null)
+    setLastCreated(null)
+    // Focus the serial number input for quick-add
+    setTimeout(() => {
+      const input = serialRef.current?.querySelector("input")
+      input?.focus()
+    }, 100)
+  }
+
+  function clearAllFields() {
     setSerialNumber("")
     setAssetType("")
     setManufacturer("")
@@ -91,13 +110,43 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
     setNotes("")
     setError("")
     setFieldErrors({})
+    setDuplicateWarning(null)
     setLastCreated(null)
-    // Focus the serial number input for quick-add
     setTimeout(() => {
       const input = serialRef.current?.querySelector("input")
       input?.focus()
     }, 100)
   }
+
+  // Strip dashes/spaces and check for duplicate serial on blur
+  const handleSerialBlur = useCallback(async () => {
+    // Strip dashes and spaces
+    const cleaned = serialNumber.replace(/[-\s]/g, "")
+    if (cleaned !== serialNumber) {
+      setSerialNumber(cleaned)
+    }
+
+    // Check for duplicates
+    if (!cleaned) {
+      setDuplicateWarning(null)
+      return
+    }
+
+    const supabase = createClient()
+    const { data } = await supabase
+      .from("assets")
+      .select("internal_asset_id, serial_number")
+      .eq("serial_number", cleaned)
+      .limit(1)
+
+    if (data && data.length > 0) {
+      setDuplicateWarning(
+        `Serial number "${cleaned}" already exists on asset ${data[0].internal_asset_id}. You can still save if this is intentional.`,
+      )
+    } else {
+      setDuplicateWarning(null)
+    }
+  }, [serialNumber])
 
   async function handleSubmit() {
     setError("")
@@ -112,10 +161,13 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
       return
     }
 
+    // Strip dashes/spaces from serial before submit (in case blur didn't fire)
+    const cleanedSerial = serialNumber.replace(/[-\s]/g, "")
+
     const formData = new FormData()
     formData.set("transaction_id", transactionId)
     formData.set("tracking_mode", trackingMode)
-    formData.set("serial_number", serialNumber)
+    formData.set("serial_number", cleanedSerial)
     formData.set("asset_type", assetType)
     formData.set("manufacturer", manufacturer)
     formData.set("model", model)
@@ -203,7 +255,7 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
               size="sm"
               variant="outline"
               className="border-green-300 text-green-800 hover:bg-green-100 dark:border-green-800 dark:text-green-200"
-              onClick={clearAssetFields}
+              onClick={clearForNextAsset}
             >
               <Plus className="mr-1 h-3 w-3" />
               Add Another
@@ -257,8 +309,18 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
                 name="serial_number"
                 placeholder="Scan or type serial..."
                 value={serialNumber}
-                onChange={setSerialNumber}
+                onChange={(val) => {
+                  setSerialNumber(val)
+                  if (duplicateWarning) setDuplicateWarning(null)
+                }}
+                onBlur={handleSerialBlur}
               />
+              {duplicateWarning && (
+                <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>{duplicateWarning}</span>
+                </div>
+              )}
             </div>
 
             {/* Asset Type */}
@@ -366,8 +428,8 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
           {/* Submit */}
           <div className="flex justify-end gap-3 pt-2">
             {createdAssets.length > 0 && !lastCreated && (
-              <Button type="button" variant="ghost" onClick={clearAssetFields}>
-                Clear
+              <Button type="button" variant="ghost" onClick={clearAllFields}>
+                Clear All
               </Button>
             )}
             <Button

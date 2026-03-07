@@ -140,8 +140,8 @@ CREATE TABLE asset_hard_drives (
 CREATE TABLE asset_grading (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   asset_id UUID NOT NULL REFERENCES assets(id) ON DELETE CASCADE UNIQUE,
-  cosmetic_category TEXT CHECK (cosmetic_category IN ('C1', 'C2', 'C3', 'C4', 'C5')),
-  functioning_category TEXT CHECK (functioning_category IN ('F1', 'F2', 'F3', 'F4', 'F5')),
+  cosmetic_category TEXT CHECK (cosmetic_category IN ('C0', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'C10')),
+  functioning_category TEXT CHECK (functioning_category IN ('F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'Recycle')),
   does_unit_power_up BOOLEAN,
   does_unit_function_properly BOOLEAN,
   created_at TIMESTAMPTZ DEFAULT now(),

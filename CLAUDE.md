@@ -115,8 +115,8 @@ All assets share: internal_asset_id (auto), serial_number (optional), asset_type
 
 ## Grading System
 
-- **Cosmetic**: C1 (New), C2 (Like New), C3 (Good), C4 (Used Good), C5 (Poor)
-- **Functional**: F1 (Fully Functional), F2 (Minor Issues), F3 (Key Functions Working), F4 (Major Issues), F5 (Non-Functional)
+- **Cosmetic**: C0 (Not Categorized), C1 (Damaged), C2 (Used Poor), C3 (Used Fair), C4 (Used Good), C5 (Used Very Good), C6 (Used Excellent), C7 (Certified Pre-Owned), C8 (Unused), C9 (New Open Box), C10 (Recycle)
+- **Functional**: F1 (Collectible or Specialty Electronics), F2 (Verified Specialty Electronics), F3 (Key Functions Working), F4 (Hardware Functional), F5 (Refurbished), F6 (Like New), Recycle
 
 ## Important Notes
 

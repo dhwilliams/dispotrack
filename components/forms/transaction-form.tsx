@@ -73,16 +73,21 @@ export function TransactionForm({ transaction, action }: TransactionFormProps) {
           <CardTitle className="text-base">Transaction Details</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
-          {transaction && (
-            <div className="space-y-2 sm:col-span-2">
-              <Label>Transaction Number</Label>
-              <Input
-                value={transaction.transaction_number}
-                disabled
-                className="bg-muted"
-              />
-            </div>
-          )}
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="transaction_number">Transaction Number *</Label>
+            <Input
+              id="transaction_number"
+              name="transaction_number"
+              defaultValue={transaction?.transaction_number ?? ""}
+              placeholder="e.g. T20260307.00001"
+              required
+            />
+            {state.fieldErrors?.transaction_number && (
+              <p className="text-xs text-destructive">
+                {state.fieldErrors.transaction_number}
+              </p>
+            )}
+          </div>
           <div className="space-y-2">
             <Label htmlFor="transaction_date">Transaction Date *</Label>
             <Input

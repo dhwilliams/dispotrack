@@ -423,7 +423,39 @@
 - [x] Production audit: no hardcoded URLs, no unguarded env vars, all API routes have error handling
 - [ ] Test with realistic data volume (500+ assets per Caspio report screenshot)
 
-### 5.2 — Production Deployment
+### 5.2 — Tester Feedback (Amber v1)
+
+> Feedback from primary tester Amber Holliday. Broken into sub-steps matching PROMPTS.md.
+
+#### 5.2a — Transaction Number & Print Sheet
+- [ ] Make transaction number user-provided instead of auto-generated (validate uniqueness on save)
+- [ ] Transaction print sheet: one-page printable view (HTML + print CSS) with barcode of transaction number (use JsBarcode or Code128 SVG)
+
+#### 5.2b — Asset Intake Fixes (Serial Number)
+- [ ] Clear serial number field after each asset create in quick-add mode (keep transaction, type, manufacturer, model for batch entry)
+- [ ] Soft warning on duplicate serial numbers: check `assets.serial_number` on blur/submit, warn but allow override
+- [ ] Strip dashes and spaces from serial numbers on input (`.replace(/[-\s]/g, '')`)
+
+#### 5.2c — Grading System Update (schema migration required)
+- [ ] Update cosmetic categories to C0–C10:
+  - C0 Not Categorized, C1 Damaged, C2 Used Poor, C3 Used Fair, C4 Used Good, C5 Used Very Good, C6 Used Excellent, C7 Certified Pre-Owned, C8 Unused, C9 New Open Box, C10 Recycle
+- [ ] Update functional categories to F1–F6 + Recycle:
+  - F1 Collectible or Specialty Electronics, F2 Verified Specialty Electronics, F3 Key Functions Working, F4 Hardware Functional, F5 Refurbished, F6 Like New, Recycle
+- [ ] DB migration: update CHECK constraints on `asset_grading` for new values
+- [ ] Update all UI references: grading forms, detail views, badge labels, reports
+
+#### 5.2d — Desktop Field Definitions & Drive Sanitization Display ✅
+- [x] Add `ac_adapter` (boolean) and `screen_size` (text) to desktop field definitions (INSERT into `asset_type_field_definitions`)
+- [x] Show drive-level sanitization status inline on Hardware tab drive rows (method, date, tech)
+- [x] Ensure sanitization report pulls drive-level data correctly when drives are wiped (not just crushed)
+
+#### 5.2e — New Operational Reports ✅
+- [x] Add prominent "Print / Save as PDF" button on all certificate reports (triggers `window.print()`) — already present on all 4
+- [x] New report: Assets Received by Transaction — filterable by transaction number, table of all assets, CSV + print
+- [x] New report: Available Assets — all assets where `available_for_sale = true`, CSV + print
+- [x] New report: Assets Sold by Date Range — date range picker, all sold assets in period, CSV + print
+
+### 5.3 — Production Deployment
 - [ ] Set up Vercel project (connect GitHub repo)
 - [ ] Configure environment variables in Vercel dashboard:
   - [ ] `NEXT_PUBLIC_SUPABASE_URL`
@@ -433,7 +465,7 @@
 - [ ] Verify auth flow works in production
 - [ ] Test all features end-to-end in production
 
-### 5.3 — Data Migration
+### 5.4 — Data Migration
 - [ ] Document Caspio data export process (CSV export from Download/Edit Asset Report)
 - [ ] Create `scripts/import-caspio-data.ts` migration script:
   - [ ] Map Caspio columns to DispoTrack v2 schema
@@ -461,7 +493,6 @@
 - [ ] **Email Notifications** — Alert when transaction is complete, certificates are ready
 - [ ] **Audit Log Dashboard** — Admin view of all changes across the system
 - [ ] **Custom Report Builder** — Ad-hoc queries and report generation
-- [ ] **PDF Export** — Generate downloadable PDFs for certificates (currently HTML+print)
 - [ ] **Recurring Customers** — Quick-fill from previous transactions for repeat customers
 - [ ] **Client Settlement Statement** — Revenue share report per client for a date range
 - [ ] **R2v3 Audit Report** — Compliance report aligned with R2v3 standard
@@ -484,5 +515,5 @@
 | Phase 1: Core Data Entry | Complete | 1.1 ✅, 1.2 ✅, 1.3 ✅, 1.4 ✅ |
 | Phase 2: Asset Processing | Complete | 2.1 ✅, 2.2 ✅, 2.3 ✅, 2.4 ✅ |
 | Phase 3: Reports | Complete | 3.1 ✅, 3.2 ✅, 3.3 ✅, 3.4 ✅, 3.5 ✅ |
-| Phase 4: Dashboard, Admin & Analytics | In Progress | 4.1 ✅, 4.2 ✅, 4.3 ✅, 4.4 ✅, 4.5 next |
-| Phase 5: Deploy & Migration | Not Started | Vercel, Production, Caspio Data Migration (internal_asset_ids, inventory records, asset_hardware → JSONB, drive-level sanitization) |
+| Phase 4: Dashboard, Admin & Analytics | Complete | 4.1 ✅, 4.2 ✅, 4.3 ✅, 4.4 ✅, 4.5 ✅ |
+| Phase 5: Deploy & Migration | In Progress | 5.1 ✅, 5.2 Tester Feedback, 5.3 Vercel, 5.4 Caspio Data Migration |
