@@ -566,3 +566,17 @@ Error handling hardened:
 - Added `notes` column to Assets Received report table and CSV download.
 - Clarified header date label from "Date:" to "Transaction Date:" to distinguish from the per-asset "Date Received" column (which shows `created_at`).
 - Also in this session: added Phase 6 TODO items from Notesv2.md feedback, corresponding PROMPTS for 6a/6b/6c, moved Production Deployment → Phase 11, Data Migration → Phase 12.
+
+## Phase 6b — Available Assets Report: Add Detail Fields
+
+**What was done:**
+- Expanded Supabase query to join `asset_type_details`, `asset_grading`, `asset_hard_drives`, and `asset_sanitization`.
+- Added 14 new columns: Notes, CPU, Total Memory, Optical Drive, Chassis Type, Color, HD Size, Sanitization Method, Powers Up, Functions Properly, Cosmetic Category, Functioning Category, AC Adapter, Screen Size.
+- CPU extracted from `cpu_info` json_array format. HD Size concatenated from multiple drives. Sanitization prefers drive-level, falls back to device-level.
+- 22-column table with horizontal scroll. Synced top+bottom scrollbars. `@page { size: landscape }` for print. Smaller font (7pt) in print to fit columns.
+- CSV includes all 22 columns.
+- `AvailableRow` interface exported from component for shared use.
+
+**Notable decisions:**
+- Used `w-max` Tailwind class on table to prevent columns from stretching wider than content. Style jsx alone wasn't reliable for this.
+- Added visible scrollbar (14px, dark thumb) + "Scroll right to see all columns →" hint text + synced top scrollbar via refs.

@@ -7,17 +7,7 @@ import { AvailableReport } from "@/components/reports/available-report"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2, Package } from "lucide-react"
-
-interface AvailableRow {
-  internal_asset_id: string
-  serial_number: string | null
-  asset_type: string
-  manufacturer: string | null
-  model: string | null
-  bin_location: string | null
-  transaction_number: string
-  customer_name: string
-}
+import type { AvailableRow } from "@/components/reports/available-report"
 
 export default function AvailableAssetsReportPage() {
   const [loading, setLoading] = useState(false)
@@ -34,7 +24,7 @@ export default function AvailableAssetsReportPage() {
       const { data, error: fetchError } = await supabase
         .from("assets")
         .select(
-          "internal_asset_id, serial_number, asset_type, manufacturer, model, model_name, asset_tag, bin_location, status, transactions(transaction_number, clients(name))",
+          "internal_asset_id, serial_number, asset_type, manufacturer, model, bin_location, notes, asset_type_details(details), asset_grading(cosmetic_category, functioning_category, does_unit_power_up, does_unit_function_properly), asset_hard_drives(size, sanitization_method), asset_sanitization(sanitization_method), transactions(transaction_number, clients(name))",
         )
         .eq("available_for_sale", true)
         .order("asset_type")
@@ -52,6 +42,54 @@ export default function AvailableAssetsReportPage() {
           clients: { name: string }
         }
 
+        const details = (
+          a.asset_type_details as unknown as {
+            details: Record<string, unknown>
+          } | null
+        )?.details
+
+        const grading = a.asset_grading as unknown as {
+          cosmetic_category: string | null
+          functioning_category: string | null
+          does_unit_power_up: boolean | null
+          does_unit_function_properly: boolean | null
+        } | null
+
+        const drives = a.asset_hard_drives as unknown as Array<{
+          size: string | null
+          sanitization_method: string | null
+        }> | null
+
+        const deviceSan = a.asset_sanitization as unknown as {
+          sanitization_method: string | null
+        } | null
+
+        // HD Size: concatenate all drive sizes
+        const hdSizes = (drives ?? [])
+          .map((d) => d.size)
+          .filter(Boolean)
+        const hdSize = hdSizes.length > 0 ? hdSizes.join(", ") : null
+
+        // Sanitization: prefer drive-level, fall back to device-level
+        const driveSanMethods = (drives ?? [])
+          .map((d) => d.sanitization_method)
+          .filter(Boolean)
+        const sanMethod =
+          driveSanMethods.length > 0
+            ? [...new Set(driveSanMethods)].join(", ")
+            : deviceSan?.sanitization_method ?? null
+
+        // CPU info: extract from json_array format
+        let cpuDisplay: string | null = null
+        if (details?.cpu_info) {
+          const cpuInfo = details.cpu_info
+          if (Array.isArray(cpuInfo)) {
+            cpuDisplay = cpuInfo.map((c: Record<string, unknown>) => c.type ?? c.text ?? "").filter(Boolean).join(", ")
+          } else if (typeof cpuInfo === "string") {
+            cpuDisplay = cpuInfo
+          }
+        }
+
         return {
           internal_asset_id: a.internal_asset_id,
           serial_number: a.serial_number,
@@ -61,6 +99,20 @@ export default function AvailableAssetsReportPage() {
           bin_location: a.bin_location,
           transaction_number: txn?.transaction_number ?? "",
           customer_name: txn?.clients?.name ?? "",
+          notes: a.notes,
+          cpu: cpuDisplay,
+          total_memory: (details?.total_memory as string) ?? null,
+          optical_drive: (details?.optical_drive_type as string) ?? null,
+          chassis_type: (details?.chassis_type as string) ?? null,
+          color: (details?.color as string) ?? null,
+          hd_size: hdSize,
+          sanitization_method: sanMethod,
+          does_unit_power_up: grading?.does_unit_power_up ?? null,
+          does_unit_function_properly: grading?.does_unit_function_properly ?? null,
+          cosmetic_category: grading?.cosmetic_category ?? null,
+          functioning_category: grading?.functioning_category ?? null,
+          ac_adapter: details?.ac_adapter != null ? Boolean(details.ac_adapter) : null,
+          screen_size: (details?.screen_size as string) ?? null,
         }
       })
 

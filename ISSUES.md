@@ -82,3 +82,14 @@
 - If the `value` doesn't contain the search term (e.g., searching "HP" but value is `asset-LR3-000001-SN123`), cmdk hides the item even though the API returned it
 - Result: "9 results found" footer text visible but no items rendered
 - **Fix**: Pass `shouldFilter={false}` to the `Command` component. Added `shouldFilter` prop passthrough to `CommandDialog` in `components/ui/command.tsx` since the shadcn default doesn't expose it.
+
+## Phase 6b
+
+### Issue: Wide report table columns stretch beyond content width
+- With `table-layout: auto` and no explicit width, the table expands to fill its container, distributing extra space across columns — making sparse columns like "HD Size" disproportionately wide.
+- Setting `width: max-content` in `<style jsx>` alone didn't reliably fix it.
+- **Fix**: Add Tailwind `w-max` class directly on the `<table>` element. Tailwind utility classes are more reliably applied than style jsx for layout-critical properties.
+
+### Issue: Horizontal scrollbar not visible on macOS
+- macOS hides scrollbars by default (overlay scrollbar behavior). Users had no visual indicator the table was scrollable.
+- **Fix**: Use `overflow-x: scroll` (not `auto`), style webkit scrollbar with 14px height + dark thumb color, and add synced top scrollbar via dual `<div>` wrappers with `useRef` + `scrollLeft` sync.

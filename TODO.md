@@ -466,8 +466,8 @@
 - [x] Fix header date: label clarified to "Transaction Date:" to distinguish from "Date Received" column
 - [x] Add `notes` to CSV download
 
-### 6b — Available Assets Report: Add Detail Fields
-- [ ] Add these columns/fields to the Available Assets report table and CSV:
+### 6b — Available Assets Report: Add Detail Fields ✅
+- [x] Add these columns/fields to the Available Assets report table and CSV:
   - Notes
   - CPU
   - Total Memory
@@ -482,7 +482,7 @@
   - Functioning Category (from `asset_grading`)
   - AC Adapter Included (from `asset_type_details`)
   - Screen Size (from `asset_type_details`)
-- [ ] Requires expanding the Supabase query to join `asset_type_details`, `asset_grading`, `asset_hard_drives`, and `asset_sanitization`
+- [x] Requires expanding the Supabase query to join `asset_type_details`, `asset_grading`, `asset_hard_drives`, and `asset_sanitization`
 
 ### 6c — Assets Sold Report Updates
 - [ ] Remove Sold Date column, replace with Shipment Date (from `asset_sales.shipment_date`)
@@ -560,6 +560,6 @@
 | Phase 3: Reports | Complete | 3.1 ✅, 3.2 ✅, 3.3 ✅, 3.4 ✅, 3.5 ✅ |
 | Phase 4: Dashboard, Admin & Analytics | Complete | 4.1 ✅, 4.2 ✅, 4.3 ✅, 4.4 ✅, 4.5 ✅ |
 | Phase 5: Hardening & Tester Feedback v1 | Complete | 5.1 ✅, 5.2a ✅, 5.2b ✅, 5.2c ✅, 5.2d ✅, 5.2e ✅ |
-| Phase 6: Tester Feedback v2 | In Progress | 6a ✅, 6b Available Report, 6c Sold Report |
+| Phase 6: Tester Feedback v2 | In Progress | 6a ✅, 6b ✅, 6c Sold Report |
 | Phase 11: Production Deployment | Not Started | Vercel setup |
 | Phase 12: Data Migration | Not Started | Caspio export + import script |
