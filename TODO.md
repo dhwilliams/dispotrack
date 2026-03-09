@@ -484,13 +484,13 @@
   - Screen Size (from `asset_type_details`)
 - [x] Requires expanding the Supabase query to join `asset_type_details`, `asset_grading`, `asset_hard_drives`, and `asset_sanitization`
 
-### 6c — Assets Sold Report Updates
-- [ ] Remove Sold Date column, replace with Shipment Date (from `asset_sales.shipment_date`)
-- [ ] Add Logista SO column (from `asset_sales.logista_so`)
-- [ ] Add Customer PO column (from `asset_sales.customer_po_number`)
-- [ ] Add Customer Account Number column (from `clients.account_number` via transaction join)
-- [ ] Add Asset Destination column (from `assets.asset_destination`)
-- [ ] Update CSV download to match new columns
+### 6c — Assets Sold Report Updates ✅
+- [x] Remove Sold Date column, replace with Shipment Date (from `asset_sales.shipment_date`)
+- [x] Add Logista SO column (from `asset_sales.logista_so`)
+- [x] Add Customer PO column (from `asset_sales.customer_po_number`)
+- [x] Add Customer Account Number column (from `clients.account_number` via transaction join)
+- [x] Add Asset Destination column (from `assets.asset_destination`)
+- [x] Update CSV download to match new columns
 
 ---
 
@@ -560,6 +560,6 @@
 | Phase 3: Reports | Complete | 3.1 ✅, 3.2 ✅, 3.3 ✅, 3.4 ✅, 3.5 ✅ |
 | Phase 4: Dashboard, Admin & Analytics | Complete | 4.1 ✅, 4.2 ✅, 4.3 ✅, 4.4 ✅, 4.5 ✅ |
 | Phase 5: Hardening & Tester Feedback v1 | Complete | 5.1 ✅, 5.2a ✅, 5.2b ✅, 5.2c ✅, 5.2d ✅, 5.2e ✅ |
-| Phase 6: Tester Feedback v2 | In Progress | 6a ✅, 6b ✅, 6c Sold Report |
+| Phase 6: Tester Feedback v2 | Complete | 6a ✅, 6b ✅, 6c ✅ |
 | Phase 11: Production Deployment | Not Started | Vercel setup |
 | Phase 12: Data Migration | Not Started | Caspio export + import script |

@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Loader2, DollarSign } from "lucide-react"
 
 interface SoldRow {
-  sold_date: string | null
+  shipment_date: string | null
   internal_asset_id: string
   serial_number: string | null
   asset_type: string
@@ -20,7 +20,11 @@ interface SoldRow {
   sale_price: number | null
   transaction_number: string
   customer_name: string
+  customer_account_number: string
   ebay_item_number: string | null
+  logista_so: string | null
+  customer_po_number: string | null
+  asset_destination: string | null
 }
 
 function defaultStartDate(): string {
@@ -60,7 +64,7 @@ export default function SoldReportPage() {
       const { data: sales, error: salesError } = await supabase
         .from("asset_sales")
         .select(
-          "sale_price, sold_date, sold_to_name, logista_so, ebay_item_number, buyer_id, buyers(name), assets(internal_asset_id, serial_number, asset_type, manufacturer, model, transactions(transaction_number, clients(name)))"
+          "sale_price, sold_date, shipment_date, sold_to_name, logista_so, customer_po_number, ebay_item_number, buyer_id, buyers(name), assets(internal_asset_id, serial_number, asset_type, manufacturer, model, asset_destination, transactions(transaction_number, clients(name, account_number)))"
         )
         .gte("sold_date", startDate)
         .lte("sold_date", endDate)
@@ -79,9 +83,10 @@ export default function SoldReportPage() {
           asset_type: string
           manufacturer: string | null
           model: string | null
+          asset_destination: string | null
           transactions: {
             transaction_number: string
-            clients: { name: string }
+            clients: { name: string; account_number: string }
           }
         }
 
@@ -95,7 +100,7 @@ export default function SoldReportPage() {
         }
 
         return {
-          sold_date: sale.sold_date,
+          shipment_date: sale.shipment_date,
           internal_asset_id: asset.internal_asset_id,
           serial_number: asset.serial_number,
           asset_type: asset.asset_type,
@@ -105,7 +110,11 @@ export default function SoldReportPage() {
           sale_price: sale.sale_price,
           transaction_number: asset.transactions.transaction_number,
           customer_name: asset.transactions.clients.name,
+          customer_account_number: asset.transactions.clients.account_number,
           ebay_item_number: sale.ebay_item_number,
+          logista_so: sale.logista_so,
+          customer_po_number: sale.customer_po_number,
+          asset_destination: asset.asset_destination,
         }
       })
 

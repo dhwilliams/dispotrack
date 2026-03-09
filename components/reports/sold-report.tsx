@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Printer, ArrowLeft, Download } from "lucide-react"
 
 interface SoldRow {
-  sold_date: string | null
+  shipment_date: string | null
   internal_asset_id: string
   serial_number: string | null
   asset_type: string
@@ -15,7 +15,11 @@ interface SoldRow {
   sale_price: number | null
   transaction_number: string
   customer_name: string
+  customer_account_number: string
   ebay_item_number: string | null
+  logista_so: string | null
+  customer_po_number: string | null
+  asset_destination: string | null
 }
 
 interface SoldReportProps {
@@ -23,6 +27,13 @@ interface SoldReportProps {
   endDate: string
   assets: SoldRow[]
   onBack: () => void
+}
+
+const destinationLabels: Record<string, string> = {
+  external_reuse: "External Reuse",
+  recycle: "Recycle",
+  internal_reuse: "Internal Reuse",
+  pending: "Pending",
 }
 
 const assetTypeLabels: Record<string, string> = {
@@ -69,7 +80,7 @@ export function SoldReport({
 
   function handleDownloadCSV() {
     const headers = [
-      "Sold Date",
+      "Ship Date",
       "Internal ID",
       "Serial #",
       "Type",
@@ -77,12 +88,16 @@ export function SoldReport({
       "Model",
       "Buyer",
       "Sale Price",
+      "Logista SO",
+      "Customer PO",
       "Transaction",
       "Customer",
+      "Account #",
+      "Destination",
       "eBay Item #",
     ]
     const rows = assets.map((a) => [
-      formatDate(a.sold_date),
+      formatDate(a.shipment_date),
       a.internal_asset_id,
       a.serial_number ?? "N/A",
       assetTypeLabels[a.asset_type] ?? a.asset_type,
@@ -90,8 +105,12 @@ export function SoldReport({
       a.model ?? "",
       a.buyer_name ?? "N/A",
       a.sale_price != null ? a.sale_price.toFixed(2) : "N/A",
+      a.logista_so ?? "",
+      a.customer_po_number ?? "",
       a.transaction_number,
       a.customer_name,
+      a.customer_account_number,
+      destinationLabels[a.asset_destination ?? ""] ?? a.asset_destination ?? "",
       a.ebay_item_number ?? "",
     ])
 
@@ -162,47 +181,58 @@ export function SoldReport({
           </div>
         </div>
 
-        {/* Asset table */}
-        <table className="report-table">
-          <thead>
-            <tr>
-              <th>Sold Date</th>
-              <th>Internal ID</th>
-              <th>Serial #</th>
-              <th>Type</th>
-              <th>Manufacturer</th>
-              <th>Model</th>
-              <th>Buyer</th>
-              <th>Sale Price</th>
-              <th>Transaction</th>
-              <th>Customer</th>
-            </tr>
-          </thead>
-          <tbody>
-            {assets.length === 0 ? (
+        {/* Asset table — horizontal scroll for wide table */}
+        <p className="scroll-hint no-print">Scroll right to see all columns →</p>
+        <div className="table-wrapper">
+          <table className="report-table w-max">
+            <thead>
               <tr>
-                <td colSpan={10} style={{ textAlign: "center", padding: "24px" }}>
-                  No sold assets found in this date range.
-                </td>
+                <th>Ship Date</th>
+                <th>Internal ID</th>
+                <th>Serial #</th>
+                <th>Type</th>
+                <th>Manufacturer</th>
+                <th>Model</th>
+                <th>Buyer</th>
+                <th>Sale Price</th>
+                <th>Logista SO</th>
+                <th>Customer PO</th>
+                <th>Transaction</th>
+                <th>Customer</th>
+                <th>Account #</th>
+                <th>Destination</th>
               </tr>
-            ) : (
-              assets.map((asset, i) => (
-                <tr key={i}>
-                  <td>{formatDate(asset.sold_date)}</td>
-                  <td>{asset.internal_asset_id}</td>
-                  <td>{asset.serial_number ?? "N/A"}</td>
-                  <td>{assetTypeLabels[asset.asset_type] ?? asset.asset_type}</td>
-                  <td>{asset.manufacturer ?? ""}</td>
-                  <td>{asset.model ?? ""}</td>
-                  <td>{asset.buyer_name ?? "N/A"}</td>
-                  <td>{formatCurrency(asset.sale_price)}</td>
-                  <td>{asset.transaction_number}</td>
-                  <td>{asset.customer_name}</td>
+            </thead>
+            <tbody>
+              {assets.length === 0 ? (
+                <tr>
+                  <td colSpan={14} style={{ textAlign: "center", padding: "24px" }}>
+                    No sold assets found in this date range.
+                  </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                assets.map((asset, i) => (
+                  <tr key={i}>
+                    <td className="whitespace-nowrap">{formatDate(asset.shipment_date)}</td>
+                    <td className="font-mono text-xs whitespace-nowrap">{asset.internal_asset_id}</td>
+                    <td className="whitespace-nowrap">{asset.serial_number ?? "N/A"}</td>
+                    <td className="whitespace-nowrap">{assetTypeLabels[asset.asset_type] ?? asset.asset_type}</td>
+                    <td className="whitespace-nowrap">{asset.manufacturer ?? ""}</td>
+                    <td className="whitespace-nowrap">{asset.model ?? ""}</td>
+                    <td className="whitespace-nowrap">{asset.buyer_name ?? "N/A"}</td>
+                    <td className="whitespace-nowrap">{formatCurrency(asset.sale_price)}</td>
+                    <td className="whitespace-nowrap">{asset.logista_so ?? ""}</td>
+                    <td className="whitespace-nowrap">{asset.customer_po_number ?? ""}</td>
+                    <td className="whitespace-nowrap">{asset.transaction_number}</td>
+                    <td className="whitespace-nowrap">{asset.customer_name}</td>
+                    <td className="whitespace-nowrap">{asset.customer_account_number}</td>
+                    <td className="whitespace-nowrap">{destinationLabels[asset.asset_destination ?? ""] ?? asset.asset_destination ?? ""}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
         {/* Footer */}
         <div className="report-footer">
@@ -218,7 +248,7 @@ export function SoldReport({
       <style jsx>{`
         /* Screen styles for the report */
         .report-content {
-          max-width: 1100px;
+          max-width: 100%;
           margin: 0 auto;
           background: white;
           padding: 40px;
@@ -255,24 +285,67 @@ export function SoldReport({
           line-height: 1.5;
         }
 
-        .report-table {
-          width: 100%;
-          border-collapse: collapse;
+        .scroll-hint {
           font-size: 13px;
+          font-weight: 500;
+          color: #475569;
+          text-align: right;
           margin-top: 16px;
+          margin-bottom: 6px;
+        }
+
+        .table-wrapper {
+          overflow-x: scroll;
+          margin-top: 0;
+          border: 1px solid #e5e7eb;
+          border-radius: 4px;
+          padding-bottom: 2px;
+        }
+
+        /* Firefox */
+        .table-wrapper {
+          scrollbar-width: auto;
+          scrollbar-color: #64748b #e2e8f0;
+        }
+
+        /* Chrome/Safari/Edge */
+        .table-wrapper::-webkit-scrollbar {
+          height: 14px;
+          display: block !important;
+        }
+
+        .table-wrapper::-webkit-scrollbar-track {
+          background: #e2e8f0;
+        }
+
+        .table-wrapper::-webkit-scrollbar-thumb {
+          background: #64748b;
+          border-radius: 7px;
+          border: 2px solid #e2e8f0;
+        }
+
+        .table-wrapper::-webkit-scrollbar-thumb:hover {
+          background: #475569;
+        }
+
+        .report-table {
+          border-collapse: collapse;
+          font-size: 12px;
+          table-layout: auto;
         }
 
         .report-table th {
           background: #1a5c5c;
           color: white;
-          padding: 8px 12px;
+          padding: 6px 8px;
           text-align: left;
           font-weight: 600;
-          font-size: 12px;
+          font-size: 11px;
+          white-space: nowrap;
         }
 
         .report-table td {
-          padding: 6px 12px;
+          padding: 4px 8px;
           border-bottom: 1px solid #e5e7eb;
         }
 
@@ -299,22 +372,28 @@ export function SoldReport({
             max-width: 100%;
           }
 
+          .table-wrapper {
+            overflow: visible;
+          }
+
+          .report-table {
+            width: 100%;
+            font-size: 7pt;
+          }
+
           .report-table th {
             background: #1a5c5c !important;
             color: white !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
+            padding: 3px 4px;
+            font-size: 7pt;
           }
 
           .report-table td {
             border-bottom: 1px solid #ddd;
-            padding: 4px 8px;
-            font-size: 10pt;
-          }
-
-          .report-table th {
-            padding: 6px 8px;
-            font-size: 9pt;
+            padding: 2px 4px;
+            font-size: 7pt;
           }
 
           .report-footer {
@@ -332,6 +411,10 @@ export function SoldReport({
           .report-meta {
             font-size: 11pt;
           }
+        }
+
+        @page {
+          size: landscape;
         }
       `}</style>
     </div>

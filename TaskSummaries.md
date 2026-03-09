@@ -580,3 +580,17 @@ Error handling hardened:
 **Notable decisions:**
 - Used `w-max` Tailwind class on table to prevent columns from stretching wider than content. Style jsx alone wasn't reliable for this.
 - Added visible scrollbar (14px, dark thumb) + "Scroll right to see all columns →" hint text + synced top scrollbar via refs.
+
+## Phase 6c — Assets Sold Report Updates
+
+**What was done:**
+- Replaced "Sold Date" column with "Ship Date" (`asset_sales.shipment_date`). Date range filter still uses `sold_date`.
+- Added 4 new columns: Logista SO, Customer PO, Account #, Destination.
+- Expanded Supabase query to include `shipment_date`, `customer_po_number`, `asset_destination`, and `account_number` on the clients join.
+- Table now has 14 columns (up from 10). CSV has 15 columns (includes eBay Item #).
+- Added horizontal scroll wrapper with visible scrollbar, scroll hint text, `w-max` table class, and `@page { size: landscape }` for print — matching the Available report pattern from 6b.
+- Added `destinationLabels` map for friendly destination display names.
+
+**Notable decisions:**
+- Kept `sold_date` as the date range filter (when was it sold) but display `shipment_date` (when did it ship) per tester feedback.
+- Applied same scroll/print pattern established in 6b for consistency across wide reports.
