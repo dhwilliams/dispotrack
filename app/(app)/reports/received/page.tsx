@@ -20,6 +20,7 @@ interface ReceivedRow {
   asset_tag: string | null
   quantity: number
   status: string
+  notes: string | null
   created_at: string
 }
 
@@ -92,7 +93,7 @@ export default function ReceivedReportPage() {
       // Fetch all assets for this transaction
       const { data: assets, error: assetsError } = await supabase
         .from("assets")
-        .select("internal_asset_id, serial_number, asset_type, manufacturer, model, model_name, asset_tag, quantity, tracking_mode, status, created_at")
+        .select("internal_asset_id, serial_number, asset_type, manufacturer, model, model_name, asset_tag, quantity, tracking_mode, status, notes, created_at")
         .eq("transaction_id", transactionId)
         .order("asset_type")
         .order("created_at")
@@ -124,6 +125,7 @@ export default function ReceivedReportPage() {
         asset_tag: a.asset_tag,
         quantity: a.quantity ?? 1,
         status: a.status,
+        notes: a.notes,
         created_at: a.created_at,
       }))
 

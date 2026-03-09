@@ -536,11 +536,101 @@ Any issues or questions — ask me. When complete, tell me how to test each repo
 Do not commit until I review. No co-authoring on commits.
 ```
 
-**5.3 — Production Deployment**
+---
+
+### Phase 6: Tester Feedback (Amber v2)
+
+**6a — Assets Received Report Fixes**
+```
+@TODO.md @CLAUDE.md @.agents/ui-builder.md @.agents/api-architect.md
+
+Mark the previous step as complete. Proceed with Phase 6a — Assets Received Report Fixes and ONLY that step.
+
+Use ui-builder for report component updates, api-architect for query changes. Use TaskCreate to track sub-tasks.
+
+Two items from tester feedback:
+1. Add `notes` field as a column in the Assets Received report table and CSV download. The notes field is already on the `assets` table — just needs to be added to the select query, table columns, and CSV export.
+2. Fix header date: the report header shows the wrong date. It should show `transaction_date` from the transaction record, not `created_at` or the generated date. The tester noted the transaction date was 3/8 but assets were entered 3/9 — the header should show the transaction date (3/8), not the asset creation date.
+
+Files to modify:
+- `app/(app)/reports/received/page.tsx` — add notes to query select, pass to component
+- `components/reports/received-report.tsx` — add Notes column to table and CSV, fix date display
+
+Any issues or questions — ask me. When complete, tell me how to verify and what the next step is.
+
+Do not commit until I review. No co-authoring on commits.
+```
+
+**6b — Available Assets Report: Add Detail Fields**
+```
+@TODO.md @CLAUDE.md @.agents/ui-builder.md @.agents/api-architect.md
+
+Mark the previous step as complete. Proceed with Phase 6b — Available Assets Report Detail Fields and ONLY that step.
+
+Use ui-builder for report layout with many columns, api-architect for the expanded query with joins. Use TaskCreate to track sub-tasks.
+
+The tester wants these additional fields on the Available Assets report:
+- Notes (from `assets.notes`)
+- CPU (from `asset_type_details.details->'cpu_info'`)
+- Total Memory (from `asset_type_details.details->'total_memory'`)
+- Optical Drive (from `asset_type_details.details->'optical_drive_type'`)
+- Chassis Type (from `asset_type_details.details->'chassis_type'`)
+- Color (from `asset_type_details.details->'color'`)
+- HD Size (from `asset_hard_drives.size` — concatenate if multiple drives)
+- Sanitization Method (device-level from `asset_sanitization.sanitization_method`, or drive-level from `asset_hard_drives.sanitization_method`)
+- Does the unit power up? (from `asset_grading.does_unit_power_up`)
+- Does the unit function properly? (from `asset_grading.does_unit_function_properly`)
+- Cosmetic Category (from `asset_grading.cosmetic_category`)
+- Functioning Category (from `asset_grading.functioning_category`)
+- AC Adapter Included (from `asset_type_details.details->'ac_adapter'`)
+- Screen Size (from `asset_type_details.details->'screen_size'`)
+
+This requires expanding the Supabase query to join `asset_type_details`, `asset_grading`, `asset_hard_drives`, and `asset_sanitization`. The table will be wide — consider which columns to show on screen vs. CSV-only, or use horizontal scroll.
+
+Files to modify:
+- `app/(app)/reports/available/page.tsx` — expand query with joins, map to row interface
+- `components/reports/available-report.tsx` — add columns to table and CSV
+
+Any issues or questions — ask me. When complete, tell me how to verify and what the next step is.
+
+Do not commit until I review. No co-authoring on commits.
+```
+
+**6c — Assets Sold Report Updates**
+```
+@TODO.md @CLAUDE.md @.agents/ui-builder.md @.agents/api-architect.md
+
+Mark the previous step as complete. Proceed with Phase 6c — Assets Sold Report Updates and ONLY that step.
+
+Use ui-builder for report column changes, api-architect for query updates. Use TaskCreate to track sub-tasks.
+
+Tester feedback on the Assets Sold report:
+1. Remove Sold Date column, replace with Shipment Date (from `asset_sales.shipment_date`)
+2. Add Logista SO column (from `asset_sales.logista_so`)
+3. Add Customer PO column (from `asset_sales.customer_po_number`)
+4. Add Customer Account Number column (from `clients.account_number` — already available through the transaction→client join)
+5. Add Asset Destination column (from `assets.asset_destination`)
+
+Update both the on-screen table and CSV download to reflect these column changes.
+
+Files to modify:
+- `app/(app)/reports/sold/page.tsx` — add new fields to query select and row mapping
+- `components/reports/sold-report.tsx` — swap sold_date→shipment_date, add new columns to table and CSV
+
+Any issues or questions — ask me. When complete, tell me how to verify and what the next step is.
+
+Do not commit until I review. No co-authoring on commits.
+```
+
+---
+
+### Phase 11: Production Deployment
+
+**11.1 — Production Deployment**
 ```
 @TODO.md @CLAUDE.md @.agents/api-architect.md
 
-Mark the previous step as complete. Proceed with Phase 5.3 — Production Deployment and ONLY that step.
+Mark the previous step as complete. Proceed with Phase 11.1 — Production Deployment and ONLY that step.
 
 Use api-architect for environment variable configuration and production checks. Use TaskCreate to track sub-tasks.
 
@@ -549,11 +639,11 @@ Any issues or questions — ask me. When complete, list all manual Vercel dashbo
 Do not commit until I review. No co-authoring on commits.
 ```
 
-**5.4 — Data Migration**
+**12.1 — Data Migration**
 ```
 @TODO.md @CLAUDE.md @.agents/data-engineer.md @.agents/api-architect.md
 
-Mark the previous step as complete. Proceed with Phase 5.4 — Data Migration and ONLY that step.
+Mark the previous step as complete. Proceed with Phase 12.1 — Data Migration and ONLY that step.
 
 Use data-engineer for the Caspio-to-DispoTrack column mapping and migration script, api-architect for the target v2 schema. Use TaskCreate to track sub-tasks.
 

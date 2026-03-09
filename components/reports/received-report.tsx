@@ -13,6 +13,7 @@ interface ReceivedRow {
   asset_tag: string | null
   quantity: number
   status: string
+  notes: string | null
   created_at: string
 }
 
@@ -83,6 +84,7 @@ export function ReceivedReport({
       "Qty",
       "Status",
       "Date Received",
+      "Notes",
     ]
     const rows = assets.map((a) => [
       a.internal_asset_id,
@@ -94,6 +96,7 @@ export function ReceivedReport({
       String(a.quantity),
       statusLabels[a.status] ?? a.status,
       formatDate(a.created_at),
+      a.notes ?? "",
     ])
 
     const csv = [headers, ...rows]
@@ -144,7 +147,7 @@ export function ReceivedReport({
             <p className="report-meta-primary">
               {transactionNumber} &mdash; {customerName}
             </p>
-            <p>Date: {formatDate(transactionDate)}</p>
+            <p>Transaction Date: {formatDate(transactionDate)}</p>
             {customerAddress.map((line, i) => (
               <p key={i}>{line}</p>
             ))}
@@ -164,6 +167,7 @@ export function ReceivedReport({
               <th>Qty</th>
               <th>Status</th>
               <th>Date Received</th>
+              <th>Notes</th>
             </tr>
           </thead>
           <tbody>
@@ -178,6 +182,7 @@ export function ReceivedReport({
                 <td className="text-center">{asset.quantity}</td>
                 <td>{statusLabels[asset.status] ?? asset.status}</td>
                 <td>{formatDate(asset.created_at)}</td>
+                <td className="max-w-48 truncate text-xs">{asset.notes ?? ""}</td>
               </tr>
             ))}
           </tbody>

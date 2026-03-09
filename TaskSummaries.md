@@ -550,3 +550,19 @@ Error handling hardened:
 - `app/(app)/hd-crush/actions.ts` — LIKE escaping
 - `app/(app)/inventory/actions.ts` — Journal error checks + unused var removal
 - `app/api/assets/intake/route.ts` — Error checks on inventory/journal/history inserts
+
+## Phase 5.2 — Tester Feedback (Amber v1)
+
+**What was done:**
+- **5.2a**: Transaction number changed from auto-generated to user-provided. Added printable transaction sheet with Code128 barcode (pure SVG, no library).
+- **5.2b**: Intake serial number now clears after create in quick-add mode, soft duplicate warning on blur, strips dashes/spaces.
+- **5.2c**: Grading system updated to C0–C10 cosmetic and F1–F6+Recycle functional. DB migration (00005), types updated, all UI references updated.
+- **5.2d**: Desktop field definitions added (ac_adapter, screen_size) via migration (00006). Blue info banner on sanitization tab for storage-bearing assets.
+- **5.2e**: 3 new operational reports (Assets Received by Transaction, Available Assets, Assets Sold by Date Range) with CSV + print. Reports hub split into Audit Certificates and Operational Reports sections. All 4 existing certificates already had Print buttons.
+
+## Phase 6a — Assets Received Report Fixes
+
+**What was done:**
+- Added `notes` column to Assets Received report table and CSV download.
+- Clarified header date label from "Date:" to "Transaction Date:" to distinguish from the per-asset "Date Received" column (which shows `created_at`).
+- Also in this session: added Phase 6 TODO items from Notesv2.md feedback, corresponding PROMPTS for 6a/6b/6c, moved Production Deployment → Phase 11, Data Migration → Phase 12.

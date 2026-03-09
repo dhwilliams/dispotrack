@@ -427,22 +427,22 @@
 
 > Feedback from primary tester Amber Holliday. Broken into sub-steps matching PROMPTS.md.
 
-#### 5.2a — Transaction Number & Print Sheet
-- [ ] Make transaction number user-provided instead of auto-generated (validate uniqueness on save)
-- [ ] Transaction print sheet: one-page printable view (HTML + print CSS) with barcode of transaction number (use JsBarcode or Code128 SVG)
+#### 5.2a — Transaction Number & Print Sheet ✅
+- [x] Make transaction number user-provided instead of auto-generated (validate uniqueness on save)
+- [x] Transaction print sheet: one-page printable view (HTML + print CSS) with barcode of transaction number (use JsBarcode or Code128 SVG)
 
-#### 5.2b — Asset Intake Fixes (Serial Number)
-- [ ] Clear serial number field after each asset create in quick-add mode (keep transaction, type, manufacturer, model for batch entry)
-- [ ] Soft warning on duplicate serial numbers: check `assets.serial_number` on blur/submit, warn but allow override
-- [ ] Strip dashes and spaces from serial numbers on input (`.replace(/[-\s]/g, '')`)
+#### 5.2b — Asset Intake Fixes (Serial Number) ✅
+- [x] Clear serial number field after each asset create in quick-add mode (keep transaction, type, manufacturer, model for batch entry)
+- [x] Soft warning on duplicate serial numbers: check `assets.serial_number` on blur/submit, warn but allow override
+- [x] Strip dashes and spaces from serial numbers on input (`.replace(/[-\s]/g, '')`)
 
-#### 5.2c — Grading System Update (schema migration required)
-- [ ] Update cosmetic categories to C0–C10:
+#### 5.2c — Grading System Update (schema migration required) ✅
+- [x] Update cosmetic categories to C0–C10:
   - C0 Not Categorized, C1 Damaged, C2 Used Poor, C3 Used Fair, C4 Used Good, C5 Used Very Good, C6 Used Excellent, C7 Certified Pre-Owned, C8 Unused, C9 New Open Box, C10 Recycle
-- [ ] Update functional categories to F1–F6 + Recycle:
+- [x] Update functional categories to F1–F6 + Recycle:
   - F1 Collectible or Specialty Electronics, F2 Verified Specialty Electronics, F3 Key Functions Working, F4 Hardware Functional, F5 Refurbished, F6 Like New, Recycle
-- [ ] DB migration: update CHECK constraints on `asset_grading` for new values
-- [ ] Update all UI references: grading forms, detail views, badge labels, reports
+- [x] DB migration: update CHECK constraints on `asset_grading` for new values
+- [x] Update all UI references: grading forms, detail views, badge labels, reports
 
 #### 5.2d — Desktop Field Definitions & Drive Sanitization Display ✅
 - [x] Add `ac_adapter` (boolean) and `screen_size` (text) to desktop field definitions (INSERT into `asset_type_field_definitions`)
@@ -455,7 +455,48 @@
 - [x] New report: Available Assets — all assets where `available_for_sale = true`, CSV + print
 - [x] New report: Assets Sold by Date Range — date range picker, all sold assets in period, CSV + print
 
-### 5.3 — Production Deployment
+---
+
+## Phase 6: Tester Feedback (Amber v2)
+
+> Feedback from second round of testing. Updates to the 3 new operational reports based on real usage.
+
+### 6a — Assets Received Report Fixes ✅
+- [x] Add `notes` field as a column in the Assets Received report table
+- [x] Fix header date: label clarified to "Transaction Date:" to distinguish from "Date Received" column
+- [x] Add `notes` to CSV download
+
+### 6b — Available Assets Report: Add Detail Fields
+- [ ] Add these columns/fields to the Available Assets report table and CSV:
+  - Notes
+  - CPU
+  - Total Memory
+  - Optical Drive
+  - Chassis Type
+  - Color
+  - HD Size (from `asset_hard_drives`)
+  - Sanitization Method (device-level or drive-level)
+  - Does the unit power up? (from `asset_grading`)
+  - Does the unit function properly? (from `asset_grading`)
+  - Cosmetic Category (from `asset_grading`)
+  - Functioning Category (from `asset_grading`)
+  - AC Adapter Included (from `asset_type_details`)
+  - Screen Size (from `asset_type_details`)
+- [ ] Requires expanding the Supabase query to join `asset_type_details`, `asset_grading`, `asset_hard_drives`, and `asset_sanitization`
+
+### 6c — Assets Sold Report Updates
+- [ ] Remove Sold Date column, replace with Shipment Date (from `asset_sales.shipment_date`)
+- [ ] Add Logista SO column (from `asset_sales.logista_so`)
+- [ ] Add Customer PO column (from `asset_sales.customer_po_number`)
+- [ ] Add Customer Account Number column (from `clients.account_number` via transaction join)
+- [ ] Add Asset Destination column (from `assets.asset_destination`)
+- [ ] Update CSV download to match new columns
+
+---
+
+## Phase 11: Production Deployment
+
+### 11.1 — Production Deployment
 - [ ] Set up Vercel project (connect GitHub repo)
 - [ ] Configure environment variables in Vercel dashboard:
   - [ ] `NEXT_PUBLIC_SUPABASE_URL`
@@ -465,7 +506,9 @@
 - [ ] Verify auth flow works in production
 - [ ] Test all features end-to-end in production
 
-### 5.4 — Data Migration
+## Phase 12: Data Migration
+
+### 12.1 — Data Migration
 - [ ] Document Caspio data export process (CSV export from Download/Edit Asset Report)
 - [ ] Create `scripts/import-caspio-data.ts` migration script:
   - [ ] Map Caspio columns to DispoTrack v2 schema
@@ -516,4 +559,7 @@
 | Phase 2: Asset Processing | Complete | 2.1 ✅, 2.2 ✅, 2.3 ✅, 2.4 ✅ |
 | Phase 3: Reports | Complete | 3.1 ✅, 3.2 ✅, 3.3 ✅, 3.4 ✅, 3.5 ✅ |
 | Phase 4: Dashboard, Admin & Analytics | Complete | 4.1 ✅, 4.2 ✅, 4.3 ✅, 4.4 ✅, 4.5 ✅ |
-| Phase 5: Deploy & Migration | In Progress | 5.1 ✅, 5.2 Tester Feedback, 5.3 Vercel, 5.4 Caspio Data Migration |
+| Phase 5: Hardening & Tester Feedback v1 | Complete | 5.1 ✅, 5.2a ✅, 5.2b ✅, 5.2c ✅, 5.2d ✅, 5.2e ✅ |
+| Phase 6: Tester Feedback v2 | In Progress | 6a ✅, 6b Available Report, 6c Sold Report |
+| Phase 11: Production Deployment | Not Started | Vercel setup |
+| Phase 12: Data Migration | Not Started | Caspio export + import script |
