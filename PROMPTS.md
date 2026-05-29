@@ -15,10 +15,15 @@ Mark the previous step as complete. Proceed with Phase X.X — [step name] and O
 
 Use the relevant agent context from .agents/ for domain knowledge. Spawn parallel sub-agents (Task tool) for any independent sub-tasks that can run simultaneously. Use TaskCreate to track sub-tasks within this step.
 
-Any issues or questions during work — ask me. When complete, summarize what was done, what to verify (if anything), and what the next step is.
+Any issues or questions during work — ask me. When implementation is complete:
+1. Summarize what was done.
+2. Write `drafts/<tasknumber>-verifysteps.md` per the workflow rule in CLAUDE.md (prereqs, numbered scenarios with expected results, DB verify queries, gotchas).
+3. Ask me whether to verify manually or automate. Wait for my answer before running tests or signing off.
 
 Do not commit until I review. No co-authoring on commits.
 ```
+
+> **Per-phase prompts below pre-date the verifysteps workflow but the rule still applies** — the closing instructions ("tell me how to test...") are now satisfied by writing the verifysteps doc and asking manual-vs-automate. The CLAUDE.md workflow rule is the source of truth.
 
 ---
 

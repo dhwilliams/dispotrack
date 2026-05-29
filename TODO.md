@@ -2,6 +2,7 @@
 
 > Master task list organized by phase. Complete each phase before moving to the next.
 > Mark tasks `[x]` as they are completed. Add notes or blockers inline as needed.
+> **Each step finishes with `drafts/<tasknumber>-verifysteps.md`** (manual or automated — see CLAUDE.md Workflow Rules).
 
 ---
 

@@ -15,8 +15,19 @@ Replacement for Caspio-based asset disposition tracker used at the LR3 facility 
 - `npm run dev` — Start dev server (port 3000)
 - `npm run build` — Production build
 - `npm run lint` — ESLint check
+- `npm run test` — Unit + e2e
+- `npm run test:unit` / `test:unit:watch` — Vitest
+- `npm run test:e2e` / `test:e2e:headed` — Playwright (reuses existing dev server if running on :3000)
 - `npx supabase db push` — Push migrations to Supabase
 - `npx supabase gen types typescript --project-id <id> > lib/supabase/types.ts` — Regenerate DB types
+
+## Testing
+
+- **Unit** (`tests/unit/`) — Vitest, node env. Pure logic only (parsers, validators, formatters, calculation helpers). Test file naming: `*.test.ts`. Setup file `tests/unit/setup.ts` loads `.env.local`.
+- **E2E** (`tests/e2e/`) — Playwright, single chromium project, `workers: 1`, `fullyParallel: false` (tests share one Supabase — keep mutations sequential). `global-setup.ts` logs in test users and saves session state to `tests/.auth/<user>.json`. Test file naming: `*.spec.ts`.
+- **Helpers** (`tests/helpers/db.ts`) — service-role client (`adminDb()`) and prefix-based cleanup helpers. Grow this file as features need it.
+- **Prerequisites**: `TEST_ADMIN_EMAIL` and `TEST_ADMIN_PASSWORD` must be set in `.env.local`. First-time: `npx playwright install chromium`.
+- **Convention**: name test fixtures with a recognizable prefix (e.g. `TEST-ACCT-` for client account numbers, `TST20260101.00001` for transaction numbers) and clean up in `afterEach` via `deleteAssetsByPrefix` / `deleteTransactionsByPrefix` / `deleteClientsByPrefix`. Reruns should never trip on stale data.
 
 ## Architecture
 
@@ -90,6 +101,9 @@ lib/
 - Use TaskCreate to track sub-tasks within each step.
 - Spawn parallel sub-agents (Task tool) for independent work.
 - Do not commit until the user reviews. No co-authoring on commits.
+- **After every completed step, write `drafts/<tasknumber>-verifysteps.md`** (e.g., `drafts/7a-verifysteps.md`). One file per step, named by task number. Format: prerequisites (env vars, restart commands, test fixtures), numbered test scenarios with expected results + DB verify queries, gotchas. Rewrite if regenerating for the same task — don't append.
+- **After writing the verifysteps doc, ASK the user whether to verify manually or have you automate the verification** before doing either. Don't assume. If manual, wait for sign-off. If automate, follow the testing stack (Playwright e2e + Vitest unit per the Testing section above), mock external services, seed and clean up via the service-role helpers in `tests/helpers/db.ts`, and write `drafts/<tasknumber>-testresults.md` when the suite passes. Format: summary table (suite/tests/pass/fail/duration), coverage map (verifystep scenario → test file), env notes, issues encountered, how to re-run.
+- `drafts/` is gitignored — these files are ephemeral working docs for the active step.
 - When building forms, render fields dynamically from `asset_type_field_definitions` — not hardcoded per type.
 - Reports (Certificate of Disposition, Certificate of Sanitization, Certificate of Data Destruction, Certificate of Recycling) use HTML + print CSS, not PDF generation.
 - Label printing is optional — never a required workflow step. Never gates progress.

@@ -12,6 +12,9 @@
 
 # testing
 /coverage
+/playwright-report
+/test-results
+/tests/.auth
 
 # next.js
 /.next/
@@ -39,6 +42,9 @@ CLAUDE.local.md
 
 # reference files (not part of the app)
 /projectinfo/
+
+# ephemeral working docs (verifysteps, testresults — may contain creds, sample DB output)
+/drafts
 
 # vercel
 .vercel
