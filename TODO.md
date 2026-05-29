@@ -494,6 +494,98 @@
 
 ---
 
+## Phase 7: Tester Feedback (Amber v3)
+
+> Feedback from Amber on 5/18/2026 (see `docs/DispoTrack Changes_051826.docx`, `docs/Mfg Names.xlsx`, and `docs/amber-questions-051826.md` for the Q&A). Schema changes (multi-location clients, manufacturer table), new tablet asset type, and form improvements.
+
+### 7a — Multi-Location Clients
+- [ ] Write migration `supabase/migrations/00007_client_locations.sql`:
+  - [ ] Create `client_locations` table (id, client_id FK, name, address1, address2, city, state, zip, contact_name, contact_email, contact_phone, is_primary BOOLEAN, external_reference_id, notes, created_at, updated_at)
+  - [ ] Add `client_location_id UUID REFERENCES client_locations(id)` to `transactions` (nullable during backfill)
+  - [ ] Data migration: for each existing client, create one primary `client_locations` row using current address/contact fields; link all existing transactions to that location
+  - [ ] DROP address1, address2, city, state, zip, contact_name, contact_email, contact_phone from `clients` (account-level fields only: account_number, name, cost_center, external_reference_id, notes)
+  - [ ] After backfill, ALTER `transactions.client_location_id` to NOT NULL
+  - [ ] Index `idx_client_locations_client` on `client_locations(client_id)`
+  - [ ] Index `idx_transactions_client_location` on `transactions(client_location_id)`
+  - [ ] RLS for `client_locations`: same as clients (read all authenticated non-portal users; admin + operator manage)
+- [ ] Regenerate TypeScript types (`lib/supabase/types.ts`)
+- [ ] Client detail page (`app/(app)/clients/[id]/page.tsx`): add Locations section
+  - [ ] List of locations with primary badge, edit, delete (cannot delete primary)
+  - [ ] "Add Location" dialog with full address + per-location contact
+  - [ ] Mark Primary action
+- [ ] New form: `components/forms/location-form.tsx` (reusable for create + edit)
+- [ ] Update `ClientSelect` to also surface a `LocationSelect` (filtered by selected client)
+- [ ] Transaction create/edit (`app/(app)/transactions/new/page.tsx`, `[id]/page.tsx`):
+  - [ ] Pick client → pick location (required)
+  - [ ] Auto-populate address from selected location for display
+- [ ] Asset list filter (`app/(app)/assets/page.tsx`): optional Location filter (appears after Client is chosen)
+- [ ] Certificate reports (all 4): pull address from `client_locations` via `transactions.client_location_id` — NOT from `clients`
+  - [ ] `app/api/reports/disposition/route.ts`
+  - [ ] `app/api/reports/sanitization/route.ts`
+  - [ ] `app/api/reports/destruction/route.ts`
+  - [ ] `app/api/reports/recycling/route.ts`
+- [ ] Operational reports (received/available/sold): keep client name, show location name where address would have been
+- [ ] Cmd+K search (`app/api/search/route.ts`): include location name in client results when ambiguous
+- [ ] Dashboard "Top customers" stays at client (account) level — no change
+- [ ] Revenue terms stay on `clients` (account-level per Amber) — no schema change
+- [ ] Note: client_portal_user RLS is currently based on `clients.contact_email` which is being moved to locations — revisit when client portal is actually deployed (no active portal users yet)
+
+### 7b — Manufacturer Dropdown
+- [ ] Write migration `supabase/migrations/00008_manufacturers.sql`:
+  - [ ] Create `manufacturers` table (id, name TEXT UNIQUE NOT NULL, sort_order INTEGER, is_active BOOLEAN DEFAULT true, created_at, updated_at)
+  - [ ] Seed from `docs/Mfg Names.xlsx` (126 names — drop "No Mfg Name")
+  - [ ] Index `idx_manufacturers_name` on `manufacturers(name)`
+  - [ ] RLS: all authenticated read; admin manage
+- [ ] Regenerate TypeScript types
+- [ ] Build `components/shared/manufacturer-combobox.tsx`:
+  - [ ] Uses shadcn `Popover` + `Command` (no new dependency)
+  - [ ] Autocomplete from `manufacturers` table (server fetch on mount or pre-load list)
+  - [ ] Free-text entry allowed — typed value goes to `assets.manufacturer` as-is
+  - [ ] Typed one-offs are NOT auto-inserted into `manufacturers` table (per Amber — avoids "Dell"/"DELL"/"dell" pollution)
+- [ ] Replace `manufacturer` text Input in `components/forms/intake-form.tsx` with `<ManufacturerCombobox>`
+- [ ] Replace `manufacturer` text Input in `components/forms/asset-form/product-info-tab.tsx` with `<ManufacturerCombobox>`
+- [ ] Add Manufacturers tab to admin panel (`app/(app)/admin/page.tsx` — now 5 tabs):
+  - [ ] List with search + sort
+  - [ ] Create/edit/delete dialog (admin-actions client component)
+  - [ ] Active/inactive toggle (Switch)
+  - [ ] Delete confirmation (AlertDialog)
+- [ ] Server actions in `app/(app)/admin/actions.ts`: createManufacturer, updateManufacturer, deleteManufacturer
+
+### 7c — New Tablet Asset Type
+- [ ] Write migration `supabase/migrations/00009_tablet_asset_type.sql`:
+  - [ ] ALTER `assets` CHECK constraint to include `'tablet'` (drop + recreate constraint)
+  - [ ] Seed `asset_type_field_definitions` for tablet:
+    - Hardware group: cpu_info (json_array), total_memory (text), color (text)
+    - Type-specific group: battery, battery_held_30min, webcam, screen_size, screen_condition, keyboard_works, ac_adapter
+    - Explicitly OMIT: optical_drive_type (per Amber), laptop_screen_program_ran_successfully (laptop-only per Amber)
+- [ ] Regenerate TypeScript types (asset_type union now includes 'tablet')
+- [ ] Add tablet to asset type Select options:
+  - [ ] `components/forms/intake-form.tsx`
+  - [ ] `components/forms/asset-form/product-info-tab.tsx`
+  - [ ] `app/(app)/assets/page.tsx` filter dropdown
+- [ ] Add tablet color to `components/shared/asset-type-badge.tsx` (pick a distinct color e.g. fuchsia/pink)
+- [ ] Update `CLAUDE.md` asset types table to add tablet row
+- [ ] Update `.agents/workflow-expert.md` common asset types list
+
+### 7d — Asset Type Field Additions & Intake Descriptions
+- [ ] Write migration `supabase/migrations/00010_field_additions.sql`:
+  - [ ] INSERT into `asset_type_field_definitions`:
+    - `monitor.display_type` (select, field_options `["CRT","LCD"]`, type_specific group, sort_order placed before screen_size)
+    - `laptop.laptop_screen_program_ran_successfully` (boolean, type_specific group)
+- [ ] Intake form (`components/forms/intake-form.tsx`):
+  - [ ] When `asset_type` is `other` or `network`, fetch the field definition for `description` for that type and render a Textarea
+  - [ ] On submit, include `description` in the JSONB payload passed to the intake route handler
+- [ ] Update `app/api/assets/intake/route.ts`: accept optional `description` and persist into `asset_type_details.details.description` on the create
+- [ ] No changes needed to the existing edit form — `description` field will continue to render from field_definitions on the Type-Specific tab
+
+### 7e — Quick-Add Reset Form Button
+- [ ] Add "Reset Form" Button to `components/forms/intake-form.tsx` (positioned next to Submit, secondary variant)
+- [ ] On click: clear ALL fields — transaction, asset_type, manufacturer, model, model_name, mfg_part_number, asset_tag, quantity, weight, notes, serial_number, tracking_mode (reset to 'serialized')
+- [ ] If any field has user-entered content, show AlertDialog confirm: "Clear all fields? This won't affect assets already saved."
+- [ ] Default quick-add behavior unchanged (after Submit: keep transaction + type + mfg + model, clear serial/tag — per Phase 5.2b)
+
+---
+
 ## Phase 11: Production Deployment
 
 ### 11.1 — Production Deployment
@@ -561,5 +653,6 @@
 | Phase 4: Dashboard, Admin & Analytics | Complete | 4.1 ✅, 4.2 ✅, 4.3 ✅, 4.4 ✅, 4.5 ✅ |
 | Phase 5: Hardening & Tester Feedback v1 | Complete | 5.1 ✅, 5.2a ✅, 5.2b ✅, 5.2c ✅, 5.2d ✅, 5.2e ✅ |
 | Phase 6: Tester Feedback v2 | Complete | 6a ✅, 6b ✅, 6c ✅ |
+| Phase 7: Tester Feedback v3 | Not Started | 7a multi-location, 7b mfg dropdown, 7c tablet, 7d field additions, 7e reset button |
 | Phase 11: Production Deployment | Not Started | Vercel setup |
 | Phase 12: Data Migration | Not Started | Caspio export + import script |

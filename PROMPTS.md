@@ -624,6 +624,157 @@ Do not commit until I review. No co-authoring on commits.
 
 ---
 
+### Phase 7: Tester Feedback (Amber v3)
+
+> Feedback from Amber on 5/18/2026 (see `docs/DispoTrack Changes_051826.docx`, `docs/Mfg Names.xlsx`, `docs/amber-questions-051826.md`). Run sub-steps in order — 7a is schema-heavy and 7b/7c/7d depend on the new type system being in place. 7e is standalone.
+
+**7a — Multi-Location Clients**
+```
+@TODO.md @CLAUDE.md @.agents/api-architect.md @.agents/ui-builder.md @.agents/workflow-expert.md
+
+Mark the previous step as complete. Proceed with Phase 7a — Multi-Location Clients and ONLY that step.
+
+Use api-architect for the schema migration and RLS, ui-builder for the Locations section on client detail page and the location form, workflow-expert for the business model (per Amber: account-level revenue terms, per-location address on certificates). Spawn parallel sub-agents for independent UI work (locations section + transaction location picker + report query updates can run concurrently after migration is written). Use TaskCreate to track sub-tasks.
+
+Key design (decided with Amber):
+- Option A: one client per Account#, with a child `client_locations` table (1:N)
+- Revenue terms stay at client (account) level — NO schema change to client_revenue_terms
+- Per-location contact info (name/email/phone) — if blank, app falls back to other locations only for display, not for lookup
+- Certificates print the LOCATION address (where the product was received from), not the client's HQ
+- Existing data migration: every existing client becomes itself + one primary location with the current address; existing transactions link to that primary location
+- client_portal_user RLS to be revisited later — no active portal users today
+
+Schema (migration `00007_client_locations.sql`):
+- CREATE `client_locations` (id, client_id FK, name, address1, address2, city, state, zip, contact_name, contact_email, contact_phone, is_primary, external_reference_id, notes, timestamps)
+- ALTER `transactions` ADD `client_location_id UUID REFERENCES client_locations(id)` (nullable for backfill)
+- Backfill primary locations + link transactions, THEN set client_location_id NOT NULL
+- DROP address1/2, city, state, zip, contact_name, contact_email, contact_phone from `clients`
+- Indexes + RLS policies
+
+UI:
+- Client detail page: Locations section (list, add, edit, delete non-primary, mark primary)
+- Transaction create/edit: client select → location select (filtered by client, required)
+- Asset list: optional Location filter (appears after Client picked)
+- Certificate reports (all 4): pull address from client_locations via transaction join, NOT from clients
+- Cmd+K: append location name to client search results when helpful
+
+Any issues or questions — ask me. When complete, tell me the manual SQL step (run in Supabase SQL Editor), how to verify the data migration, and what the next step is.
+
+Do not commit until I review. No co-authoring on commits.
+```
+
+**7b — Manufacturer Dropdown**
+```
+@TODO.md @CLAUDE.md @.agents/api-architect.md @.agents/ui-builder.md
+
+Mark the previous step as complete. Proceed with Phase 7b — Manufacturer Dropdown and ONLY that step.
+
+Use api-architect for the `manufacturers` table + seed + admin CRUD actions, ui-builder for the new `<ManufacturerCombobox>` component and admin tab. Use TaskCreate to track sub-tasks.
+
+Key design (decided with Amber):
+- Option B: store in DB so admins manage the list themselves
+- Free-text entry still allowed for one-offs — typed value goes to assets.manufacturer as-is
+- Typed one-offs are NOT auto-added to the manufacturers table (avoids "Dell"/"DELL"/"dell" duplication)
+- Drop "No Mfg Name" from the seed list (per Amber)
+
+Schema (migration `00008_manufacturers.sql`):
+- CREATE `manufacturers` (id, name UNIQUE NOT NULL, sort_order, is_active, timestamps)
+- Seed 126 names from `docs/Mfg Names.xlsx` (drop "No Mfg Name")
+- Index, RLS (all read, admin manage)
+
+UI:
+- New `components/shared/manufacturer-combobox.tsx` using shadcn Popover + Command (no new dependency)
+- Replace text Input on intake form and asset edit Product Info tab
+- Admin panel: new "Manufacturers" tab (5th tab) with list + search + create/edit/delete + active toggle
+
+Server actions: createManufacturer, updateManufacturer, deleteManufacturer in `app/(app)/admin/actions.ts`.
+
+Any issues or questions — ask me. When complete, tell me how to verify the combobox works with both pre-seeded names AND a typed one-off, and what the next step is.
+
+Do not commit until I review. No co-authoring on commits.
+```
+
+**7c — New Tablet Asset Type**
+```
+@TODO.md @CLAUDE.md @.agents/api-architect.md @.agents/ui-builder.md @.agents/workflow-expert.md
+
+Mark the previous step as complete. Proceed with Phase 7c — New Tablet Asset Type and ONLY that step.
+
+Use api-architect for the CHECK constraint migration + field definitions seed, ui-builder for the asset type Select options and badge color, workflow-expert to confirm field set. Use TaskCreate to track sub-tasks.
+
+Key design (decided with Amber):
+- Tablet mirrors laptop with two exceptions:
+  - DROP optical_drive_type (per Amber)
+  - DROP laptop_screen_program_ran_successfully (laptop-only — Amber: "just laptops for now")
+
+Schema (migration `00009_tablet_asset_type.sql`):
+- ALTER `assets` CHECK constraint to include 'tablet' (drop + recreate constraint, all 10 types now)
+- INSERT field_definitions for tablet:
+  - Hardware: cpu_info (json_array), total_memory (text), color (text)
+  - Type-specific: battery, battery_held_30min, webcam, screen_size, screen_condition, keyboard_works, ac_adapter
+
+UI:
+- Regenerate types so asset_type union includes 'tablet'
+- Add tablet to Select options on intake, edit Product Info, asset list filter
+- Add tablet color to AssetTypeBadge (pick a distinct color — fuchsia or pink)
+- Update CLAUDE.md asset types table and `.agents/workflow-expert.md` common types list
+
+Any issues or questions — ask me. When complete, tell me how to test creating a tablet asset and what the next step is.
+
+Do not commit until I review. No co-authoring on commits.
+```
+
+**7d — Asset Type Field Additions & Intake Descriptions**
+```
+@TODO.md @CLAUDE.md @.agents/api-architect.md @.agents/ui-builder.md
+
+Mark the previous step as complete. Proceed with Phase 7d — Asset Type Field Additions and ONLY that step.
+
+Use api-architect for the field_definitions inserts, ui-builder for the conditional description field on intake. Use TaskCreate to track sub-tasks.
+
+Three items:
+
+1. Monitor `display_type` select field (options ["CRT","LCD"]) — INSERT into asset_type_field_definitions, field_group='type_specific', sort_order placed before screen_size.
+
+2. Laptop `laptop_screen_program_ran_successfully` boolean — INSERT into asset_type_field_definitions, field_group='type_specific'.
+
+3. Intake description field for `other` and `network`:
+   - On the intake form, when asset_type is `other` or `network`, render a Textarea for `description`
+   - Pull the field definition from asset_type_field_definitions where field_name='description' for that type (already seeded)
+   - On submit, include description in the JSONB payload passed to `/api/assets/intake`
+   - Update the intake route handler to persist into `asset_type_details.details.description` on create
+   - No change to the edit form — description already renders from field_definitions on Type-Specific tab
+
+All field changes go in migration `00010_field_additions.sql`. Two INSERTs.
+
+Any issues or questions — ask me. When complete, tell me how to verify each field shows up in the right place and what the next step is.
+
+Do not commit until I review. No co-authoring on commits.
+```
+
+**7e — Quick-Add Reset Form Button**
+```
+@TODO.md @CLAUDE.md @.agents/ui-builder.md
+
+Mark the previous step as complete. Proceed with Phase 7e — Quick-Add Reset Form Button and ONLY that step.
+
+Use ui-builder for the intake form change. Use TaskCreate to track sub-tasks.
+
+Key design (decided with Amber):
+- Default quick-add behavior unchanged (after Submit: keep transaction + type + mfg + model, clear serial/tag — per Phase 5.2b)
+- Add a "Reset Form" button next to Submit (secondary variant)
+- On click: clear ALL fields including transaction, type, manufacturer, model, model_name, mfg_part_number, asset_tag, qty, weight, notes, serial — full reset, tracking_mode back to 'serialized' default
+- Confirm via AlertDialog if any field has user-entered content (avoid accidental wipe). Don't prompt if form is already empty.
+
+Single-file change: `components/forms/intake-form.tsx`.
+
+Any issues or questions — ask me. When complete, tell me how to test (full reset works, partial reset still works on submit) and what the next step is.
+
+Do not commit until I review. No co-authoring on commits.
+```
+
+---
+
 ### Phase 11: Production Deployment
 
 **11.1 — Production Deployment**
