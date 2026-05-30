@@ -28,10 +28,12 @@ export default async function AssetDetailPage({ params }: AssetDetailPageProps) 
   const { id } = await params
   const supabase = await createClient()
 
-  // Fetch asset with transaction + client
+  // Fetch asset with transaction + client (account) + location (address)
   const { data: asset } = await supabase
     .from("assets")
-    .select("*, transactions(*, clients(*))")
+    .select(
+      "*, transactions(*, clients(name, account_number, cost_center), client_locations(name, city, state))",
+    )
     .eq("id", id)
     .single()
 
@@ -49,10 +51,13 @@ export default async function AssetDetailPage({ params }: AssetDetailPageProps) 
     clients: {
       name: string
       account_number: string
-      city: string | null
-      state: string | null
       cost_center: string | null
     }
+    client_locations: {
+      name: string
+      city: string | null
+      state: string | null
+    } | null
   }
 
   const transaction = {
@@ -61,8 +66,8 @@ export default async function AssetDetailPage({ params }: AssetDetailPageProps) 
     special_instructions: txn.special_instructions,
     client_name: txn.clients.name,
     client_account: txn.clients.account_number,
-    client_city: txn.clients.city,
-    client_state: txn.clients.state,
+    client_city: txn.client_locations?.city ?? null,
+    client_state: txn.client_locations?.state ?? null,
     cost_center: txn.clients.cost_center,
   }
 

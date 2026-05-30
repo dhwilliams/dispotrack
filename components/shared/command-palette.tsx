@@ -35,6 +35,7 @@ interface SearchResults {
     transaction_number: string
     transaction_date: string
     client_name: string
+    location_name: string | null
   }>
   clients: Array<{
     id: string
@@ -226,6 +227,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                       </span>
                       <span className="text-xs text-muted-foreground">
                         {txn.client_name}
+                        {txn.location_name ? ` · ${txn.location_name}` : ""}
                       </span>
                     </div>
                     <span className="text-xs text-muted-foreground">

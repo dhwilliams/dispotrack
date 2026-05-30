@@ -594,3 +594,27 @@ Error handling hardened:
 **Notable decisions:**
 - Kept `sold_date` as the date range filter (when was it sold) but display `shipment_date` (when did it ship) per tester feedback.
 - Applied same scroll/print pattern established in 6b for consistency across wide reports.
+
+## Phase 7a — Multi-Location Clients
+
+**What was done:**
+- Migration `00007_client_locations.sql`: new `client_locations` table (1:N child of clients), `transactions.client_location_id` NOT NULL, RLS, partial unique index for one-primary-per-client.
+- Backfill: every existing client got one primary location with its current address; every existing transaction linked to it. Migration's `DO $$ ... RAISE EXCEPTION $$` block prevents the address-column drop unless backfill is clean.
+- Dropped address/contact columns from `clients` (now only account-level: account_number, name, cost_center, external_reference_id, notes).
+- New `LocationsSection` component on client detail page: list, add via dialog, edit via dialog, mark primary (star icon), delete (blocked for primary and FK-blocked when transactions reference it).
+- New `LocationSelect` shared component with autocomplete, auto-selects primary, disabled until a client is chosen.
+- `TransactionForm` updated: pick client → pick location → address preview pulls from location. Server action validates location belongs to client.
+- All 4 certificate reports (Disposition, Sanitization, Destruction, Recycling) + transaction print sheet now print the receiving LOCATION's address, not the client's HQ.
+- Operational reports gained Location columns: `available` and `sold` on-screen + CSV.
+- Asset list: conditional Location filter — appears only when a Client is selected; populated server-side from that client's locations.
+- Cmd+K: transaction results now show `client_name · location_name` for disambiguation.
+- Test infrastructure: 9 vitest tests (schema invariants, constraints, set-primary semantics), 7 playwright e2e tests (UI flows, certificate output, asset filter visibility). All 16 passing.
+
+**Notable decisions:**
+- Per Amber: revenue terms stay on `clients` (account level), per-location contact info on `client_locations`.
+- Per Amber: certificates print the LOCATION address (where received from), not HQ.
+- Used a partial unique index `WHERE is_primary = true` to enforce exactly-one-primary at the DB layer.
+- `setPrimaryLocationAction` does demote-then-promote rather than a transaction because the action is simple and the brief in-between window has no operational consequence.
+- `client_portal_user` RLS was previously based on `clients.contact_email` — left as-is for now since no portal users exist; will be revisited when that phase ships.
+- Test fixture id-prefix convention: `TEST7A-` for unit, `E2E7A-` for e2e, `TST7A`/`E2E7A` for transactions. Extended `deleteTransactionsByPrefix` to cascade through inventory/journal/assets so reruns are self-cleaning.
+

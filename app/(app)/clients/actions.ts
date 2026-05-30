@@ -9,6 +9,10 @@ export type ClientFormState = {
   fieldErrors?: Record<string, string>
 }
 
+/* -------------------------------------------------------------------------- */
+/*  Clients                                                                   */
+/* -------------------------------------------------------------------------- */
+
 export async function createClientAction(
   _prevState: ClientFormState,
   formData: FormData,
@@ -24,10 +28,25 @@ export async function createClientAction(
   if (!name?.trim()) fieldErrors.name = "Name is required"
   if (Object.keys(fieldErrors).length > 0) return { fieldErrors }
 
-  const { error } = await supabase.from("clients").insert({
+  // Insert client (account-level fields only)
+  const { data: clientRow, error } = await supabase.from("clients").insert({
     account_number: accountNumber.trim(),
     name: name.trim(),
     cost_center: (formData.get("cost_center") as string) || null,
+    notes: (formData.get("notes") as string) || null,
+  }).select("id").single()
+
+  if (error) {
+    if (error.code === "23505") {
+      return { fieldErrors: { account_number: "Account number already exists" } }
+    }
+    return { error: error.message }
+  }
+
+  // Create the primary location from the new-client form (always seeded so transactions can be created)
+  const { error: locErr } = await supabase.from("client_locations").insert({
+    client_id: clientRow.id,
+    name: (formData.get("location_name") as string)?.trim() || name.trim(),
     address1: (formData.get("address1") as string) || null,
     address2: (formData.get("address2") as string) || null,
     city: (formData.get("city") as string) || null,
@@ -36,14 +55,11 @@ export async function createClientAction(
     contact_name: (formData.get("contact_name") as string) || null,
     contact_email: (formData.get("contact_email") as string) || null,
     contact_phone: (formData.get("contact_phone") as string) || null,
-    notes: (formData.get("notes") as string) || null,
+    is_primary: true,
   })
 
-  if (error) {
-    if (error.code === "23505") {
-      return { fieldErrors: { account_number: "Account number already exists" } }
-    }
-    return { error: error.message }
+  if (locErr) {
+    return { error: `Client saved, but primary location failed: ${locErr.message}` }
   }
 
   revalidatePath("/clients")
@@ -71,14 +87,6 @@ export async function updateClientAction(
       account_number: accountNumber.trim(),
       name: name.trim(),
       cost_center: (formData.get("cost_center") as string) || null,
-      address1: (formData.get("address1") as string) || null,
-      address2: (formData.get("address2") as string) || null,
-      city: (formData.get("city") as string) || null,
-      state: (formData.get("state") as string) || null,
-      zip: (formData.get("zip") as string) || null,
-      contact_name: (formData.get("contact_name") as string) || null,
-      contact_email: (formData.get("contact_email") as string) || null,
-      contact_phone: (formData.get("contact_phone") as string) || null,
       notes: (formData.get("notes") as string) || null,
     })
     .eq("id", id)
@@ -94,3 +102,4 @@ export async function updateClientAction(
   revalidatePath(`/clients/${id}`)
   redirect(`/clients/${id}`)
 }
+

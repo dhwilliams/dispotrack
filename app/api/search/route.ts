@@ -37,10 +37,13 @@ export async function GET(request: Request) {
         .order("created_at", { ascending: false })
         .limit(8),
 
-      // Transactions: search by transaction_number
+      // Transactions: search by transaction_number; include receiving location
+      // so operators can disambiguate when the same client has multiple sites
       supabase
         .from("transactions")
-        .select("id, transaction_number, transaction_date, clients(name)")
+        .select(
+          "id, transaction_number, transaction_date, clients(name), client_locations(name)",
+        )
         .ilike("transaction_number", pattern)
         .order("transaction_date", { ascending: false })
         .limit(5),
@@ -89,6 +92,8 @@ export async function GET(request: Request) {
         transaction_number: t.transaction_number,
         transaction_date: t.transaction_date,
         client_name: (t.clients as unknown as { name: string })?.name ?? "",
+        location_name:
+          (t.client_locations as unknown as { name: string } | null)?.name ?? null,
       })),
       clients: clientsRes.data ?? [],
       inventory: inventoryRes.data ?? [],

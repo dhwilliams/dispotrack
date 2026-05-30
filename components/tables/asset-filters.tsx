@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 
 interface AssetFiltersProps {
   clients: { id: string; name: string; account_number: string }[]
+  locations?: { id: string; name: string; is_primary: boolean }[]
   filters: {
     q?: string
     asset_type?: string
@@ -17,6 +18,7 @@ interface AssetFiltersProps {
     date_from?: string
     date_to?: string
     client_id?: string
+    client_location_id?: string
     cost_center?: string
     bin?: string
     shipment_from?: string
@@ -55,7 +57,7 @@ const DESTINATIONS = [
   { value: "pending", label: "Pending" },
 ] as const
 
-export function AssetFilters({ clients, filters }: AssetFiltersProps) {
+export function AssetFilters({ clients, locations = [], filters }: AssetFiltersProps) {
   const hasActiveFilters = Object.values(filters).some(
     (v) => v !== undefined && v !== ""
   )
@@ -137,6 +139,26 @@ export function AssetFilters({ clients, filters }: AssetFiltersProps) {
           ))}
         </select>
       </div>
+
+      {/* Location — only shown when a client is selected (locations array populated) */}
+      {locations.length > 0 && (
+        <div className="space-y-1">
+          <label className="text-xs text-muted-foreground">Location</label>
+          <select
+            name="client_location_id"
+            defaultValue={filters.client_location_id ?? ""}
+            className="border-input bg-background h-9 rounded-md border px-3 text-sm shadow-xs"
+          >
+            <option value="">All Locations</option>
+            {locations.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
+                {l.is_primary ? " (Primary)" : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Destination */}
       <div className="space-y-1">

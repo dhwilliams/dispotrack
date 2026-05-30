@@ -21,6 +21,7 @@ interface SoldRow {
   transaction_number: string
   customer_name: string
   customer_account_number: string
+  location_name: string | null
   ebay_item_number: string | null
   logista_so: string | null
   customer_po_number: string | null
@@ -64,7 +65,7 @@ export default function SoldReportPage() {
       const { data: sales, error: salesError } = await supabase
         .from("asset_sales")
         .select(
-          "sale_price, sold_date, shipment_date, sold_to_name, logista_so, customer_po_number, ebay_item_number, buyer_id, buyers(name), assets(internal_asset_id, serial_number, asset_type, manufacturer, model, asset_destination, transactions(transaction_number, clients(name, account_number)))"
+          "sale_price, sold_date, shipment_date, sold_to_name, logista_so, customer_po_number, ebay_item_number, buyer_id, buyers(name), assets(internal_asset_id, serial_number, asset_type, manufacturer, model, asset_destination, transactions(transaction_number, clients(name, account_number), client_locations(name)))"
         )
         .gte("sold_date", startDate)
         .lte("sold_date", endDate)
@@ -87,6 +88,7 @@ export default function SoldReportPage() {
           transactions: {
             transaction_number: string
             clients: { name: string; account_number: string }
+            client_locations: { name: string } | null
           }
         }
 
@@ -111,6 +113,7 @@ export default function SoldReportPage() {
           transaction_number: asset.transactions.transaction_number,
           customer_name: asset.transactions.clients.name,
           customer_account_number: asset.transactions.clients.account_number,
+          location_name: asset.transactions.client_locations?.name ?? null,
           ebay_item_number: sale.ebay_item_number,
           logista_so: sale.logista_so,
           customer_po_number: sale.customer_po_number,

@@ -10,6 +10,155 @@ export type RevenueTermFormState = {
   success?: boolean
 }
 
+export type LocationFormState = {
+  error?: string
+  fieldErrors?: Record<string, string>
+  success?: boolean
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Client Locations                                                          */
+/* -------------------------------------------------------------------------- */
+
+export async function createLocationAction(
+  _prevState: LocationFormState,
+  formData: FormData,
+): Promise<LocationFormState> {
+  const supabase = await createClient()
+
+  const clientId = formData.get("client_id") as string
+  const name = formData.get("name") as string
+
+  const fieldErrors: Record<string, string> = {}
+  if (!clientId) fieldErrors.client_id = "Client is required"
+  if (!name?.trim()) fieldErrors.name = "Location name is required"
+  if (Object.keys(fieldErrors).length > 0) return { fieldErrors }
+
+  const { error } = await supabase.from("client_locations").insert({
+    client_id: clientId,
+    name: name.trim(),
+    address1: (formData.get("address1") as string) || null,
+    address2: (formData.get("address2") as string) || null,
+    city: (formData.get("city") as string) || null,
+    state: (formData.get("state") as string) || null,
+    zip: (formData.get("zip") as string) || null,
+    contact_name: (formData.get("contact_name") as string) || null,
+    contact_email: (formData.get("contact_email") as string) || null,
+    contact_phone: (formData.get("contact_phone") as string) || null,
+    is_primary: false,
+    notes: (formData.get("notes") as string) || null,
+  })
+
+  if (error) return { error: error.message }
+
+  revalidatePath(`/clients/${clientId}`)
+  return { success: true }
+}
+
+export async function updateLocationAction(
+  _prevState: LocationFormState,
+  formData: FormData,
+): Promise<LocationFormState> {
+  const supabase = await createClient()
+
+  const id = formData.get("id") as string
+  const clientId = formData.get("client_id") as string
+  const name = formData.get("name") as string
+
+  const fieldErrors: Record<string, string> = {}
+  if (!id) fieldErrors.id = "Location id is required"
+  if (!name?.trim()) fieldErrors.name = "Location name is required"
+  if (Object.keys(fieldErrors).length > 0) return { fieldErrors }
+
+  const { error } = await supabase
+    .from("client_locations")
+    .update({
+      name: name.trim(),
+      address1: (formData.get("address1") as string) || null,
+      address2: (formData.get("address2") as string) || null,
+      city: (formData.get("city") as string) || null,
+      state: (formData.get("state") as string) || null,
+      zip: (formData.get("zip") as string) || null,
+      contact_name: (formData.get("contact_name") as string) || null,
+      contact_email: (formData.get("contact_email") as string) || null,
+      contact_phone: (formData.get("contact_phone") as string) || null,
+      notes: (formData.get("notes") as string) || null,
+    })
+    .eq("id", id)
+
+  if (error) return { error: error.message }
+
+  revalidatePath(`/clients/${clientId}`)
+  return { success: true }
+}
+
+export async function deleteLocationAction(
+  locationId: string,
+  clientId: string,
+): Promise<{ error?: string }> {
+  const supabase = await createClient()
+
+  // Block deleting the primary location
+  const { data: loc } = await supabase
+    .from("client_locations")
+    .select("is_primary")
+    .eq("id", locationId)
+    .single()
+
+  if (loc?.is_primary) {
+    return { error: "Cannot delete the primary location. Mark another as primary first." }
+  }
+
+  // Block if any transactions reference this location
+  const { count } = await supabase
+    .from("transactions")
+    .select("id", { count: "exact", head: true })
+    .eq("client_location_id", locationId)
+
+  if ((count ?? 0) > 0) {
+    return { error: `Cannot delete — ${count} transaction(s) reference this location.` }
+  }
+
+  const { error } = await supabase
+    .from("client_locations")
+    .delete()
+    .eq("id", locationId)
+
+  if (error) return { error: error.message }
+
+  revalidatePath(`/clients/${clientId}`)
+  return {}
+}
+
+export async function setPrimaryLocationAction(
+  locationId: string,
+  clientId: string,
+): Promise<{ error?: string }> {
+  const supabase = await createClient()
+
+  // Demote current primary first (the partial unique index requires no two rows
+  // with is_primary=true per client, so we can't promote without demoting first).
+  const { error: demoteErr } = await supabase
+    .from("client_locations")
+    .update({ is_primary: false })
+    .eq("client_id", clientId)
+    .eq("is_primary", true)
+  if (demoteErr) return { error: demoteErr.message }
+
+  const { error: promoteErr } = await supabase
+    .from("client_locations")
+    .update({ is_primary: true })
+    .eq("id", locationId)
+  if (promoteErr) return { error: promoteErr.message }
+
+  revalidatePath(`/clients/${clientId}`)
+  return {}
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Revenue Terms                                                             */
+/* -------------------------------------------------------------------------- */
+
 export async function createRevenueTermAction(
   _prevState: RevenueTermFormState,
   formData: FormData,

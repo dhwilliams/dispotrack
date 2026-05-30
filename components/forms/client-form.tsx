@@ -25,6 +25,7 @@ interface ClientFormProps {
 
 export function ClientForm({ client, action }: ClientFormProps) {
   const [state, formAction, pending] = useActionState(action, {})
+  const isEdit = Boolean(client)
 
   return (
     <form action={formAction} className="space-y-6">
@@ -81,97 +82,72 @@ export function ClientForm({ client, action }: ClientFormProps) {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Address</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="address1">Address Line 1</Label>
-            <Input
-              id="address1"
-              name="address1"
-              defaultValue={client?.address1 ?? ""}
-            />
-          </div>
-          <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="address2">Address Line 2</Label>
-            <Input
-              id="address2"
-              name="address2"
-              defaultValue={client?.address2 ?? ""}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="city">City</Label>
-            <Input
-              id="city"
-              name="city"
-              defaultValue={client?.city ?? ""}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="state">State</Label>
-              <Select name="state" defaultValue={client?.state ?? ""}>
-                <SelectTrigger id="state">
-                  <SelectValue placeholder="State" />
-                </SelectTrigger>
-                <SelectContent>
-                  {US_STATES.map((s) => (
-                    <SelectItem key={s.value} value={s.value}>
-                      {s.value}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="zip">ZIP</Label>
+      {!isEdit && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Primary Location</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              This becomes the customer&rsquo;s primary location. Add more locations
+              after creation.
+            </p>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="location_name">Location Name</Label>
               <Input
-                id="zip"
-                name="zip"
-                placeholder="00000"
-                defaultValue={client?.zip ?? ""}
+                id="location_name"
+                name="location_name"
+                placeholder="e.g. HQ, Memphis Branch (defaults to client name)"
               />
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Contact Information</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="contact_name">Contact Name</Label>
-            <Input
-              id="contact_name"
-              name="contact_name"
-              defaultValue={client?.contact_name ?? ""}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="contact_email">Contact Email</Label>
-            <Input
-              id="contact_email"
-              name="contact_email"
-              type="email"
-              defaultValue={client?.contact_email ?? ""}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="contact_phone">Contact Phone</Label>
-            <Input
-              id="contact_phone"
-              name="contact_phone"
-              type="tel"
-              defaultValue={client?.contact_phone ?? ""}
-            />
-          </div>
-        </CardContent>
-      </Card>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="address1">Address Line 1</Label>
+              <Input id="address1" name="address1" />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="address2">Address Line 2</Label>
+              <Input id="address2" name="address2" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="city">City</Label>
+              <Input id="city" name="city" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="state">State</Label>
+                <Select name="state">
+                  <SelectTrigger id="state">
+                    <SelectValue placeholder="State" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {US_STATES.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>
+                        {s.value}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="zip">ZIP</Label>
+                <Input id="zip" name="zip" placeholder="00000" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="contact_name">Contact Name</Label>
+              <Input id="contact_name" name="contact_name" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="contact_email">Contact Email</Label>
+              <Input id="contact_email" name="contact_email" type="email" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="contact_phone">Contact Phone</Label>
+              <Input id="contact_phone" name="contact_phone" type="tel" />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -194,7 +170,7 @@ export function ClientForm({ client, action }: ClientFormProps) {
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Saving...
             </>
-          ) : client ? (
+          ) : isEdit ? (
             "Update Client"
           ) : (
             "Create Client"

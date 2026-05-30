@@ -93,3 +93,21 @@
 ### Issue: Horizontal scrollbar not visible on macOS
 - macOS hides scrollbars by default (overlay scrollbar behavior). Users had no visual indicator the table was scrollable.
 - **Fix**: Use `overflow-x: scroll` (not `auto`), style webkit scrollbar with 14px height + dark thumb color, and add synced top scrollbar via dual `<div>` wrappers with `useRef` + `scrollLeft` sync.
+
+## Phase 7a
+
+### Issue: `deleteTransactionsByPrefix` cleanup failed when transactions had assets
+- Original helper only deleted from `transactions`, which fails with FK violation `23503` because `assets.transaction_id` references it with no cascade.
+- **Fix**: Extended the helper to delete dependent rows in order (inventory_journal → inventory → assets → transactions) before removing the transaction itself. Safe for both rerun cleanup and test teardown.
+
+### Issue: Duplicate `id="name"` between client edit form and location dialog form
+- Both the ClientForm and the LocationDialogForm rendered inputs with `id="name"` (and `id="notes"`). Both can exist in the DOM simultaneously on the client detail page (edit form always present, dialog inputs present when open). Playwright's `getByLabel(/^location name/i)` couldn't resolve the dialog input because the label-input association is broken when ids duplicate.
+- **Fix**: Prefixed all LocationDialogForm input ids with `loc-` (`loc-name`, `loc-address1`, `loc-city`, etc.). Real a11y improvement, not just a test workaround.
+
+### Issue: `getByRole("heading", ...)` doesn't match shadcn CardTitle
+- shadcn's `CardTitle` renders as a `<div>`, so role-based selectors miss it.
+- **Fix in tests**: Use `getByText("Locations", { exact: true })` for section anchoring instead of `getByRole("heading", ...)`.
+
+### Issue: `getByText("Primary", { exact: true })` matched two elements in a row
+- Test seeded a location with the default name "Primary" (from `createTestClientWithLocation`), which collided with the "Primary" badge text inside the same `<li>`.
+- **Fix**: Test helpers `createTestClientWithLocation` and `addLocation` accept explicit `locationName`. Pass distinct names from tests to avoid badge-vs-name collision.

@@ -12,10 +12,12 @@ export default async function TransactionPrintPage({ params }: PrintPageProps) {
   const { id } = await params
   const supabase = await createClient()
 
-  // Fetch transaction with client
+  // Fetch transaction with client (account-level) + location (address-level)
   const { data: transaction } = await supabase
     .from("transactions")
-    .select("*, clients(*)")
+    .select(
+      "*, clients(name, account_number), client_locations(name, address1, address2, city, state, zip, contact_name, contact_email, contact_phone)",
+    )
     .eq("id", id)
     .single()
 
@@ -42,6 +44,10 @@ export default async function TransactionPrintPage({ params }: PrintPageProps) {
   const client = transaction.clients as unknown as {
     name: string
     account_number: string
+  } | null
+
+  const location = transaction.client_locations as unknown as {
+    name: string
     address1: string | null
     address2: string | null
     city: string | null
@@ -53,9 +59,9 @@ export default async function TransactionPrintPage({ params }: PrintPageProps) {
   } | null
 
   const clientAddress = [
-    client?.address1,
-    client?.address2,
-    [client?.city, client?.state, client?.zip].filter(Boolean).join(", "),
+    location?.address1,
+    location?.address2,
+    [location?.city, location?.state, location?.zip].filter(Boolean).join(", "),
   ].filter(Boolean) as string[]
 
   return (
@@ -81,10 +87,11 @@ export default async function TransactionPrintPage({ params }: PrintPageProps) {
         specialInstructions={transaction.special_instructions}
         clientName={client?.name ?? "Unknown Client"}
         clientAccountNumber={client?.account_number ?? ""}
+        locationName={location?.name ?? null}
         clientAddress={clientAddress}
-        clientContact={client?.contact_name ?? null}
-        clientPhone={client?.contact_phone ?? null}
-        clientEmail={client?.contact_email ?? null}
+        clientContact={location?.contact_name ?? null}
+        clientPhone={location?.contact_phone ?? null}
+        clientEmail={location?.contact_email ?? null}
         typeCounts={typeCounts}
         totalAssets={totalAssets}
       />

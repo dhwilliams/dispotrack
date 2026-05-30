@@ -15,6 +15,7 @@ interface AssetsPageProps {
     status?: string
     tracking_mode?: string
     client_id?: string
+    client_location_id?: string
     destination?: string
     available_for_sale?: string
     date_from?: string
@@ -55,6 +56,7 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
     status,
     tracking_mode,
     client_id,
+    client_location_id,
     destination,
     available_for_sale,
     date_from,
@@ -100,6 +102,7 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
   if (date_from) query = query.gte("transactions.transaction_date", date_from)
   if (date_to) query = query.lte("transactions.transaction_date", date_to)
   if (client_id) query = query.eq("transactions.client_id", client_id)
+  if (client_location_id) query = query.eq("transactions.client_location_id", client_location_id)
 
   // Pagination
   const from = (page - 1) * perPage
@@ -144,6 +147,19 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
     .select("id, name, account_number")
     .order("name")
 
+  // When a client is selected, fetch its locations for the Location filter.
+  // Otherwise leave the dropdown empty (the filter component will hide itself).
+  let locations: { id: string; name: string; is_primary: boolean }[] = []
+  if (client_id) {
+    const { data: locs } = await supabase
+      .from("client_locations")
+      .select("id, name, is_primary")
+      .eq("client_id", client_id)
+      .order("is_primary", { ascending: false })
+      .order("name")
+    locations = (locs ?? []) as typeof locations
+  }
+
   const totalCount = count ?? 0
 
   return (
@@ -166,6 +182,7 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
           name: c.name,
           account_number: c.account_number,
         }))}
+        locations={locations}
         filters={{
           q,
           asset_type,
@@ -176,6 +193,7 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
           date_from,
           date_to,
           client_id,
+          client_location_id,
           bin,
         }}
       />

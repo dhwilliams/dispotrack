@@ -24,7 +24,7 @@ export default function AvailableAssetsReportPage() {
       const { data, error: fetchError } = await supabase
         .from("assets")
         .select(
-          "internal_asset_id, serial_number, asset_type, manufacturer, model, bin_location, notes, asset_type_details(details), asset_grading(cosmetic_category, functioning_category, does_unit_power_up, does_unit_function_properly), asset_hard_drives(size, sanitization_method), asset_sanitization(sanitization_method), transactions(transaction_number, clients(name))",
+          "internal_asset_id, serial_number, asset_type, manufacturer, model, bin_location, notes, asset_type_details(details), asset_grading(cosmetic_category, functioning_category, does_unit_power_up, does_unit_function_properly), asset_hard_drives(size, sanitization_method), asset_sanitization(sanitization_method), transactions(transaction_number, clients(name), client_locations(name))",
         )
         .eq("available_for_sale", true)
         .order("asset_type")
@@ -40,6 +40,7 @@ export default function AvailableAssetsReportPage() {
         const txn = a.transactions as unknown as {
           transaction_number: string
           clients: { name: string }
+          client_locations: { name: string } | null
         }
 
         const details = (
@@ -99,6 +100,7 @@ export default function AvailableAssetsReportPage() {
           bin_location: a.bin_location,
           transaction_number: txn?.transaction_number ?? "",
           customer_name: txn?.clients?.name ?? "",
+          location_name: txn?.client_locations?.name ?? null,
           notes: a.notes,
           cpu: cpuDisplay,
           total_memory: (details?.total_memory as string) ?? null,

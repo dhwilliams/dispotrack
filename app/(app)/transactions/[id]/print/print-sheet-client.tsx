@@ -24,6 +24,7 @@ interface PrintSheetClientProps {
   specialInstructions: string | null
   clientName: string
   clientAccountNumber: string
+  locationName: string | null
   clientAddress: string[]
   clientContact: string | null
   clientPhone: string | null
@@ -39,6 +40,7 @@ export function PrintSheetClient({
   specialInstructions,
   clientName,
   clientAccountNumber,
+  locationName,
   clientAddress,
   clientContact,
   clientPhone,
@@ -115,6 +117,12 @@ export function PrintSheetClient({
               <span className="sheet-field-label">Account:</span>
               <span className="sheet-field-value">{clientAccountNumber}</span>
             </div>
+            {locationName && (
+              <div className="sheet-field">
+                <span className="sheet-field-label">Location:</span>
+                <span className="sheet-field-value">{locationName}</span>
+              </div>
+            )}
             {clientAddress.length > 0 && (
               <div className="sheet-field">
                 <span className="sheet-field-label">Address:</span>

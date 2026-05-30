@@ -15,14 +15,6 @@ export type Database = {
           account_number: string
           name: string
           cost_center: string | null
-          address1: string | null
-          address2: string | null
-          city: string | null
-          state: string | null
-          zip: string | null
-          contact_name: string | null
-          contact_email: string | null
-          contact_phone: string | null
           external_reference_id: string | null
           notes: string | null
           created_at: string
@@ -33,14 +25,6 @@ export type Database = {
           account_number: string
           name: string
           cost_center?: string | null
-          address1?: string | null
-          address2?: string | null
-          city?: string | null
-          state?: string | null
-          zip?: string | null
-          contact_name?: string | null
-          contact_email?: string | null
-          contact_phone?: string | null
           external_reference_id?: string | null
           notes?: string | null
           created_at?: string
@@ -51,6 +35,36 @@ export type Database = {
           account_number?: string
           name?: string
           cost_center?: string | null
+          external_reference_id?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      client_locations: {
+        Row: {
+          id: string
+          client_id: string
+          name: string
+          address1: string | null
+          address2: string | null
+          city: string | null
+          state: string | null
+          zip: string | null
+          contact_name: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          is_primary: boolean
+          external_reference_id: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          client_id: string
+          name: string
           address1?: string | null
           address2?: string | null
           city?: string | null
@@ -59,6 +73,25 @@ export type Database = {
           contact_name?: string | null
           contact_email?: string | null
           contact_phone?: string | null
+          is_primary?: boolean
+          external_reference_id?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          client_id?: string
+          name?: string
+          address1?: string | null
+          address2?: string | null
+          city?: string | null
+          state?: string | null
+          zip?: string | null
+          contact_name?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          is_primary?: boolean
           external_reference_id?: string | null
           notes?: string | null
           created_at?: string
@@ -72,6 +105,7 @@ export type Database = {
           transaction_number: string
           transaction_date: string
           client_id: string
+          client_location_id: string
           special_instructions: string | null
           created_by: string | null
           created_at: string
@@ -82,6 +116,7 @@ export type Database = {
           transaction_number: string
           transaction_date: string
           client_id: string
+          client_location_id: string
           special_instructions?: string | null
           created_by?: string | null
           created_at?: string
@@ -92,6 +127,7 @@ export type Database = {
           transaction_number?: string
           transaction_date?: string
           client_id?: string
+          client_location_id?: string
           special_instructions?: string | null
           created_by?: string | null
           created_at?: string
@@ -823,6 +859,7 @@ export type UpdateTables<T extends keyof Database['public']['Tables']> = Databas
 
 // Shorthand row types
 export type Client = Tables<'clients'>
+export type ClientLocation = Tables<'client_locations'>
 export type Transaction = Tables<'transactions'>
 export type Asset = Tables<'assets'>
 export type AssetHardDrive = Tables<'asset_hard_drives'>

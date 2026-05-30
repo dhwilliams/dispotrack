@@ -72,18 +72,46 @@ export async function deleteAssetsByPrefix(prefix: string): Promise<number> {
   return data?.length ?? 0;
 }
 
-/** Cleanup: delete transactions whose transaction_number starts with prefix. */
+/** Cleanup: delete transactions whose transaction_number starts with prefix.
+ *
+ * Cascades by first removing dependent rows (inventory_journal, inventory,
+ * assets) that would otherwise block the delete via FK. Safe to call across
+ * reruns of the same test prefix.
+ */
 export async function deleteTransactionsByPrefix(prefix: string): Promise<number> {
-  const { data, error } = await adminDb()
+  const db = adminDb();
+  const { data: txns } = await db
     .from("transactions")
-    .delete()
-    .like("transaction_number", `${prefix}%`)
-    .select("id");
-  if (error) throw error;
-  return data?.length ?? 0;
+    .select("id")
+    .like("transaction_number", `${prefix}%`);
+
+  if (!txns?.length) return 0;
+
+  for (const t of txns) {
+    // Journal entries can reference txn or asset — clear both paths
+    await db.from("inventory_journal").delete().eq("transaction_id", t.id);
+
+    const { data: assets } = await db
+      .from("assets")
+      .select("id")
+      .eq("transaction_id", t.id);
+
+    for (const a of assets ?? []) {
+      await db.from("inventory_journal").delete().eq("asset_id", a.id);
+      await db.from("inventory").delete().eq("asset_id", a.id);
+    }
+
+    await db.from("assets").delete().eq("transaction_id", t.id);
+    await db.from("transactions").delete().eq("id", t.id);
+  }
+
+  return txns.length;
 }
 
-/** Cleanup: delete clients whose account_number starts with prefix. */
+/** Cleanup: delete clients whose account_number starts with prefix.
+ *
+ * Cascades to client_locations (ON DELETE CASCADE on the FK). Use this for
+ * isolated fixtures so reruns don't leave orphaned rows. */
 export async function deleteClientsByPrefix(prefix: string): Promise<number> {
   const { data, error } = await adminDb()
     .from("clients")
@@ -92,6 +120,61 @@ export async function deleteClientsByPrefix(prefix: string): Promise<number> {
     .select("id");
   if (error) throw error;
   return data?.length ?? 0;
+}
+
+/** Create a fixture client + one primary location, return both ids. */
+export async function createTestClientWithLocation(opts: {
+  accountNumber: string;
+  name: string;
+  locationName?: string;
+  city?: string;
+  state?: string;
+}): Promise<{ clientId: string; locationId: string }> {
+  const db = adminDb();
+  const { data: client, error: cErr } = await db
+    .from("clients")
+    .insert({
+      account_number: opts.accountNumber,
+      name: opts.name,
+    })
+    .select("id")
+    .single();
+  if (cErr || !client) throw cErr ?? new Error("client insert failed");
+
+  const { data: loc, error: lErr } = await db
+    .from("client_locations")
+    .insert({
+      client_id: client.id,
+      name: opts.locationName ?? "Primary",
+      city: opts.city ?? null,
+      state: opts.state ?? null,
+      is_primary: true,
+    })
+    .select("id")
+    .single();
+  if (lErr || !loc) throw lErr ?? new Error("location insert failed");
+
+  return { clientId: client.id, locationId: loc.id };
+}
+
+/** Add a non-primary location to an existing client. */
+export async function addLocation(
+  clientId: string,
+  opts: { name: string; city?: string; state?: string },
+): Promise<string> {
+  const { data, error } = await adminDb()
+    .from("client_locations")
+    .insert({
+      client_id: clientId,
+      name: opts.name,
+      city: opts.city ?? null,
+      state: opts.state ?? null,
+      is_primary: false,
+    })
+    .select("id")
+    .single();
+  if (error || !data) throw error ?? new Error("location insert failed");
+  return data.id;
 }
 
 /** Look up the seeded admin user's id (for tests that need a created_by value). */

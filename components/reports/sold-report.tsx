@@ -16,6 +16,7 @@ interface SoldRow {
   transaction_number: string
   customer_name: string
   customer_account_number: string
+  location_name: string | null
   ebay_item_number: string | null
   logista_so: string | null
   customer_po_number: string | null
@@ -92,6 +93,7 @@ export function SoldReport({
       "Customer PO",
       "Transaction",
       "Customer",
+      "Location",
       "Account #",
       "Destination",
       "eBay Item #",
@@ -109,6 +111,7 @@ export function SoldReport({
       a.customer_po_number ?? "",
       a.transaction_number,
       a.customer_name,
+      a.location_name ?? "",
       a.customer_account_number,
       destinationLabels[a.asset_destination ?? ""] ?? a.asset_destination ?? "",
       a.ebay_item_number ?? "",
@@ -199,6 +202,7 @@ export function SoldReport({
                 <th>Customer PO</th>
                 <th>Transaction</th>
                 <th>Customer</th>
+                <th>Location</th>
                 <th>Account #</th>
                 <th>Destination</th>
               </tr>
@@ -206,7 +210,7 @@ export function SoldReport({
             <tbody>
               {assets.length === 0 ? (
                 <tr>
-                  <td colSpan={14} style={{ textAlign: "center", padding: "24px" }}>
+                  <td colSpan={15} style={{ textAlign: "center", padding: "24px" }}>
                     No sold assets found in this date range.
                   </td>
                 </tr>
@@ -225,6 +229,7 @@ export function SoldReport({
                     <td className="whitespace-nowrap">{asset.customer_po_number ?? ""}</td>
                     <td className="whitespace-nowrap">{asset.transaction_number}</td>
                     <td className="whitespace-nowrap">{asset.customer_name}</td>
+                    <td className="whitespace-nowrap">{asset.location_name ?? ""}</td>
                     <td className="whitespace-nowrap">{asset.customer_account_number}</td>
                     <td className="whitespace-nowrap">{destinationLabels[asset.asset_destination ?? ""] ?? asset.asset_destination ?? ""}</td>
                   </tr>

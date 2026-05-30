@@ -68,10 +68,12 @@ export default function DestructionReportPage() {
     try {
       const supabase = createClient()
 
-      // Fetch transaction with client info
+      // Fetch transaction with client (account) and location (address)
       const { data: transaction, error: txnError } = await supabase
         .from("transactions")
-        .select("*, clients(*)")
+        .select(
+          "*, clients(name), client_locations(name, address1, address2, city, state, zip)",
+        )
         .eq("id", transactionId)
         .single()
 
@@ -81,7 +83,8 @@ export default function DestructionReportPage() {
         return
       }
 
-      const client = transaction.clients as unknown as {
+      const client = transaction.clients as unknown as { name: string }
+      const location = transaction.client_locations as unknown as {
         name: string
         address1: string | null
         address2: string | null
@@ -144,15 +147,15 @@ export default function DestructionReportPage() {
         return
       }
 
-      // Build address lines
+      // Build address lines from the receiving LOCATION (not HQ)
       const addressLines: string[] = []
-      if (client.address1) addressLines.push(client.address1)
-      if (client.address2) addressLines.push(client.address2)
-      const cityLine = [client.city, client.state]
+      if (location.address1) addressLines.push(location.address1)
+      if (location.address2) addressLines.push(location.address2)
+      const cityLine = [location.city, location.state]
         .filter(Boolean)
         .join(", ")
-      if (cityLine || client.zip) {
-        addressLines.push([cityLine, client.zip].filter(Boolean).join(" "))
+      if (cityLine || location.zip) {
+        addressLines.push([cityLine, location.zip].filter(Boolean).join(" "))
       }
 
       setReportData({

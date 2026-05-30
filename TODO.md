@@ -499,37 +499,38 @@
 
 > Feedback from Amber on 5/18/2026 (see `docs/DispoTrack Changes_051826.docx`, `docs/Mfg Names.xlsx`, and `docs/amber-questions-051826.md` for the Q&A). Schema changes (multi-location clients, manufacturer table), new tablet asset type, and form improvements.
 
-### 7a — Multi-Location Clients
-- [ ] Write migration `supabase/migrations/00007_client_locations.sql`:
-  - [ ] Create `client_locations` table (id, client_id FK, name, address1, address2, city, state, zip, contact_name, contact_email, contact_phone, is_primary BOOLEAN, external_reference_id, notes, created_at, updated_at)
-  - [ ] Add `client_location_id UUID REFERENCES client_locations(id)` to `transactions` (nullable during backfill)
-  - [ ] Data migration: for each existing client, create one primary `client_locations` row using current address/contact fields; link all existing transactions to that location
-  - [ ] DROP address1, address2, city, state, zip, contact_name, contact_email, contact_phone from `clients` (account-level fields only: account_number, name, cost_center, external_reference_id, notes)
-  - [ ] After backfill, ALTER `transactions.client_location_id` to NOT NULL
-  - [ ] Index `idx_client_locations_client` on `client_locations(client_id)`
-  - [ ] Index `idx_transactions_client_location` on `transactions(client_location_id)`
-  - [ ] RLS for `client_locations`: same as clients (read all authenticated non-portal users; admin + operator manage)
-- [ ] Regenerate TypeScript types (`lib/supabase/types.ts`)
-- [ ] Client detail page (`app/(app)/clients/[id]/page.tsx`): add Locations section
-  - [ ] List of locations with primary badge, edit, delete (cannot delete primary)
-  - [ ] "Add Location" dialog with full address + per-location contact
-  - [ ] Mark Primary action
-- [ ] New form: `components/forms/location-form.tsx` (reusable for create + edit)
-- [ ] Update `ClientSelect` to also surface a `LocationSelect` (filtered by selected client)
-- [ ] Transaction create/edit (`app/(app)/transactions/new/page.tsx`, `[id]/page.tsx`):
-  - [ ] Pick client → pick location (required)
-  - [ ] Auto-populate address from selected location for display
-- [ ] Asset list filter (`app/(app)/assets/page.tsx`): optional Location filter (appears after Client is chosen)
-- [ ] Certificate reports (all 4): pull address from `client_locations` via `transactions.client_location_id` — NOT from `clients`
-  - [ ] `app/api/reports/disposition/route.ts`
-  - [ ] `app/api/reports/sanitization/route.ts`
-  - [ ] `app/api/reports/destruction/route.ts`
-  - [ ] `app/api/reports/recycling/route.ts`
-- [ ] Operational reports (received/available/sold): keep client name, show location name where address would have been
-- [ ] Cmd+K search (`app/api/search/route.ts`): include location name in client results when ambiguous
-- [ ] Dashboard "Top customers" stays at client (account) level — no change
-- [ ] Revenue terms stay on `clients` (account-level per Amber) — no schema change
-- [ ] Note: client_portal_user RLS is currently based on `clients.contact_email` which is being moved to locations — revisit when client portal is actually deployed (no active portal users yet)
+### 7a — Multi-Location Clients ✅
+- [x] Write migration `supabase/migrations/00007_client_locations.sql`:
+  - [x] Create `client_locations` table (id, client_id FK, name, address1, address2, city, state, zip, contact_name, contact_email, contact_phone, is_primary BOOLEAN, external_reference_id, notes, created_at, updated_at)
+  - [x] Add `client_location_id UUID REFERENCES client_locations(id)` to `transactions` (nullable during backfill)
+  - [x] Data migration: for each existing client, create one primary `client_locations` row using current address/contact fields; link all existing transactions to that location
+  - [x] DROP address1, address2, city, state, zip, contact_name, contact_email, contact_phone from `clients` (account-level fields only: account_number, name, cost_center, external_reference_id, notes)
+  - [x] After backfill, ALTER `transactions.client_location_id` to NOT NULL
+  - [x] Index `idx_client_locations_client` on `client_locations(client_id)`
+  - [x] Index `idx_transactions_client_location` on `transactions(client_location_id)`
+  - [x] RLS for `client_locations`: same as clients (read all authenticated non-portal users; admin + operator manage)
+- [x] Regenerate TypeScript types (`lib/supabase/types.ts`)
+- [x] Client detail page (`app/(app)/clients/[id]/page.tsx`): add Locations section
+  - [x] List of locations with primary badge, edit, delete (cannot delete primary)
+  - [x] "Add Location" dialog with full address + per-location contact
+  - [x] Mark Primary action
+- [x] New form: `app/(app)/clients/[id]/locations-section.tsx` (reusable inline form, dialog-based)
+- [x] Update `ClientSelect` to also surface a `LocationSelect` (filtered by selected client)
+- [x] Transaction create/edit (`app/(app)/transactions/new/page.tsx`, `[id]/page.tsx`):
+  - [x] Pick client → pick location (required)
+  - [x] Auto-populate address from selected location for display
+- [x] Asset list filter (`app/(app)/assets/page.tsx`): optional Location filter (appears after Client is chosen)
+- [x] Certificate reports (all 4): pull address from `client_locations` via `transactions.client_location_id` — NOT from `clients`
+  - [x] `app/(app)/reports/disposition/page.tsx`
+  - [x] `app/(app)/reports/sanitization/page.tsx`
+  - [x] `app/(app)/reports/destruction/page.tsx`
+  - [x] `app/(app)/reports/recycling/page.tsx`
+- [x] Operational reports (received/available/sold): keep client name, show location name where address would have been
+- [x] Cmd+K search (`app/api/search/route.ts`): include location name in transaction results
+- [x] Dashboard "Top customers" stays at client (account) level — no change
+- [x] Revenue terms stay on `clients` (account-level per Amber) — no schema change
+- [x] Note: client_portal_user RLS is currently based on `clients.contact_email` which is being moved to locations — revisit when client portal is actually deployed (no active portal users yet)
+- [x] Tests: 9 vitest schema/invariant tests, 7 playwright e2e tests — 16/16 passing
 
 ### 7b — Manufacturer Dropdown
 - [ ] Write migration `supabase/migrations/00008_manufacturers.sql`:
@@ -654,6 +655,6 @@
 | Phase 4: Dashboard, Admin & Analytics | Complete | 4.1 ✅, 4.2 ✅, 4.3 ✅, 4.4 ✅, 4.5 ✅ |
 | Phase 5: Hardening & Tester Feedback v1 | Complete | 5.1 ✅, 5.2a ✅, 5.2b ✅, 5.2c ✅, 5.2d ✅, 5.2e ✅ |
 | Phase 6: Tester Feedback v2 | Complete | 6a ✅, 6b ✅, 6c ✅ |
-| Phase 7: Tester Feedback v3 | Not Started | 7a multi-location, 7b mfg dropdown, 7c tablet, 7d field additions, 7e reset button |
+| Phase 7: Tester Feedback v3 | In Progress | 7a ✅, 7b mfg dropdown, 7c tablet, 7d field additions, 7e reset button |
 | Phase 11: Production Deployment | Not Started | Vercel setup |
 | Phase 12: Data Migration | Not Started | Caspio export + import script |

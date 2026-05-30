@@ -13,6 +13,7 @@ export interface AvailableRow {
   bin_location: string | null
   transaction_number: string
   customer_name: string
+  location_name: string | null
   notes: string | null
   cpu: string | null
   total_memory: string | null
@@ -123,6 +124,7 @@ export function AvailableReport({
       "Bin Location",
       "Transaction",
       "Customer",
+      "Location",
       "Notes",
       "CPU",
       "Total Memory",
@@ -147,6 +149,7 @@ export function AvailableReport({
       a.bin_location ?? "",
       a.transaction_number,
       a.customer_name,
+      a.location_name ?? "",
       a.notes ?? "",
       a.cpu ?? "",
       a.total_memory ?? "",
@@ -254,6 +257,7 @@ export function AvailableReport({
                 <th>Bin</th>
                 <th>Transaction</th>
                 <th>Customer</th>
+                <th>Location</th>
                 <th>Notes</th>
               </tr>
             </thead>
@@ -281,6 +285,7 @@ export function AvailableReport({
                   <td className="whitespace-nowrap">{asset.bin_location ?? ""}</td>
                   <td className="whitespace-nowrap">{asset.transaction_number}</td>
                   <td className="whitespace-nowrap">{asset.customer_name}</td>
+                  <td className="whitespace-nowrap">{asset.location_name ?? ""}</td>
                   <td className="max-w-48 truncate text-xs">{asset.notes ?? ""}</td>
                 </tr>
               ))}
