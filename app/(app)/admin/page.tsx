@@ -31,6 +31,7 @@ export default async function AdminPage() {
     { data: fieldDefinitions },
     { data: buyers },
     { data: buyerSales },
+    { data: manufacturers },
   ] = await Promise.all([
     supabase
       .from("routing_rules")
@@ -46,19 +47,25 @@ export default async function AdminPage() {
     supabase.from("buyers").select("*").order("name"),
 
     buyerSalesQuery,
+
+    supabase
+      .from("manufacturers")
+      .select("*")
+      .order("name"),
   ])
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Admin"
-        description="User management, routing rules, field definitions, buyers"
+        description="User management, routing rules, field definitions, buyers, manufacturers"
       />
       <AdminPanel
         routingRules={routingRules ?? []}
         fieldDefinitions={fieldDefinitions ?? []}
         buyers={buyers ?? []}
         buyerSales={buyerSales ?? []}
+        manufacturers={manufacturers ?? []}
       />
     </div>
   )

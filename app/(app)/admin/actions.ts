@@ -304,3 +304,98 @@ export async function deleteBuyer(id: string) {
   revalidatePath("/admin")
   return { success: true }
 }
+
+// ---------------------------------------------------------------------------
+// Manufacturers
+// ---------------------------------------------------------------------------
+
+export async function createManufacturer(formData: FormData) {
+  const { supabase } = await requireAdmin()
+
+  const name = (formData.get("name") as string)?.trim()
+  const sortOrder = Number(formData.get("sort_order") ?? 0)
+  const isActive = formData.get("is_active") !== "false"
+
+  if (!name) return { error: "Name is required" }
+
+  const { error } = await supabase.from("manufacturers").insert({
+    name,
+    sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
+    is_active: isActive,
+  })
+
+  if (error) {
+    if (error.code === "23505") {
+      return { error: `A manufacturer named "${name}" already exists.` }
+    }
+    return { error: error.message }
+  }
+
+  revalidatePath("/admin")
+  return { success: true }
+}
+
+export async function updateManufacturer(formData: FormData) {
+  const { supabase } = await requireAdmin()
+
+  const id = formData.get("id") as string
+  const name = (formData.get("name") as string)?.trim()
+  const sortOrder = Number(formData.get("sort_order") ?? 0)
+  // `is_active` may be omitted (toggle) or explicit
+  const rawActive = formData.get("is_active")
+  const isActive = rawActive == null ? undefined : rawActive !== "false"
+
+  if (!id) return { error: "Manufacturer id is required" }
+  if (!name) return { error: "Name is required" }
+
+  const patch: Record<string, unknown> = {
+    name,
+    sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
+  }
+  if (isActive !== undefined) patch.is_active = isActive
+
+  const { error } = await supabase
+    .from("manufacturers")
+    .update(patch)
+    .eq("id", id)
+
+  if (error) {
+    if (error.code === "23505") {
+      return { error: `A manufacturer named "${name}" already exists.` }
+    }
+    return { error: error.message }
+  }
+
+  revalidatePath("/admin")
+  return { success: true }
+}
+
+export async function setManufacturerActive(id: string, isActive: boolean) {
+  const { supabase } = await requireAdmin()
+  if (!id) return { error: "Manufacturer id is required" }
+
+  const { error } = await supabase
+    .from("manufacturers")
+    .update({ is_active: isActive })
+    .eq("id", id)
+
+  if (error) return { error: error.message }
+
+  revalidatePath("/admin")
+  return { success: true }
+}
+
+export async function deleteManufacturer(id: string) {
+  const { supabase } = await requireAdmin()
+  if (!id) return { error: "Manufacturer id is required" }
+
+  const { error } = await supabase
+    .from("manufacturers")
+    .delete()
+    .eq("id", id)
+
+  if (error) return { error: error.message }
+
+  revalidatePath("/admin")
+  return { success: true }
+}

@@ -29,6 +29,7 @@ import { createClient } from "@/lib/supabase/client"
 import { BarcodeScanner } from "@/components/shared/barcode-scanner"
 import { InternalIdDisplay } from "@/components/shared/internal-id-display"
 import { TransactionSelect } from "@/components/shared/transaction-select"
+import { ManufacturerCombobox } from "@/components/shared/manufacturer-combobox"
 
 const ASSET_TYPES = [
   { value: "desktop", label: "Desktop" },
@@ -40,11 +41,6 @@ const ASSET_TYPES = [
   { value: "tv", label: "TV" },
   { value: "network", label: "Network" },
   { value: "other", label: "Other" },
-]
-
-const COMMON_MANUFACTURERS = [
-  "Dell", "HP", "Lenovo", "Apple", "Cisco", "DataCard", "Samsung",
-  "LG", "Acer", "ASUS", "Epson", "Brother", "Canon", "Panasonic",
 ]
 
 interface CreatedAsset {
@@ -346,20 +342,11 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
             {/* Manufacturer */}
             <div className="space-y-2">
               <Label htmlFor="manufacturer">Manufacturer</Label>
-              <div>
-                <Input
-                  id="manufacturer"
-                  list="manufacturer-list"
-                  placeholder="e.g. Dell, HP, Lenovo"
-                  value={manufacturer}
-                  onChange={(e) => setManufacturer(e.target.value)}
-                />
-                <datalist id="manufacturer-list">
-                  {COMMON_MANUFACTURERS.map((m) => (
-                    <option key={m} value={m} />
-                  ))}
-                </datalist>
-              </div>
+              <ManufacturerCombobox
+                id="manufacturer"
+                value={manufacturer}
+                onValueChange={setManufacturer}
+              />
             </div>
 
             {/* Model */}

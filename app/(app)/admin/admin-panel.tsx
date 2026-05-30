@@ -50,12 +50,17 @@ import {
   createBuyer,
   updateBuyer,
   deleteBuyer,
+  createManufacturer,
+  updateManufacturer,
+  setManufacturerActive,
+  deleteManufacturer,
 } from "./actions"
 
 import type {
   RoutingRule,
   AssetTypeFieldDefinition,
   Buyer,
+  Manufacturer,
   AssetType,
   RoutingAction,
   FieldType,
@@ -95,6 +100,7 @@ interface AdminPanelProps {
   fieldDefinitions: AssetTypeFieldDefinition[]
   buyers: Buyer[]
   buyerSales: BuyerSale[]
+  manufacturers: Manufacturer[]
 }
 
 // ---------------------------------------------------------------------------
@@ -178,6 +184,7 @@ export function AdminPanel({
   fieldDefinitions: initialFieldDefs,
   buyers: initialBuyers,
   buyerSales,
+  manufacturers: initialManufacturers,
 }: AdminPanelProps) {
   // ---- Users ----
   const [users, setUsers] = useState<UserRow[]>([])
@@ -222,6 +229,15 @@ export function AdminPanel({
   const [buyerError, setBuyerError] = useState("")
   const [buyerSaving, setBuyerSaving] = useState(false)
   const [viewingSalesFor, setViewingSalesFor] = useState<Buyer | null>(null)
+
+  // ---- Manufacturers ----
+  const [manufacturers, setManufacturers] = useState<Manufacturer[]>(initialManufacturers)
+  const [mfgDialogOpen, setMfgDialogOpen] = useState(false)
+  const [editingMfg, setEditingMfg] = useState<Manufacturer | null>(null)
+  const [mfgSearch, setMfgSearch] = useState("")
+  const [mfgForm, setMfgForm] = useState({ name: "", sort_order: "0", is_active: true })
+  const [mfgError, setMfgError] = useState("")
+  const [mfgSaving, setMfgSaving] = useState(false)
 
   // ---- Load users on mount ----
   const fetchUsers = useCallback(async () => {
@@ -490,9 +506,117 @@ export function AdminPanel({
     if (type === "rule") await deleteRoutingRule(id)
     else if (type === "field") await deleteFieldDefinition(id)
     else if (type === "buyer") await deleteBuyer(id)
+    else if (type === "manufacturer") {
+      const result = await deleteManufacturer(id)
+      if (result?.error) {
+        toast.error(result.error)
+        setDeleteConfirm(null)
+        return
+      }
+      setManufacturers((list) => list.filter((m) => m.id !== id))
+    }
     toast.success(`Deleted ${name}`)
     setDeleteConfirm(null)
   }
+
+  // =========================================================================
+  // MANUFACTURERS
+  // =========================================================================
+
+  function openCreateMfg() {
+    setEditingMfg(null)
+    setMfgForm({ name: "", sort_order: "0", is_active: true })
+    setMfgError("")
+    setMfgDialogOpen(true)
+  }
+
+  function openEditMfg(mfg: Manufacturer) {
+    setEditingMfg(mfg)
+    setMfgForm({
+      name: mfg.name,
+      sort_order: String(mfg.sort_order),
+      is_active: mfg.is_active,
+    })
+    setMfgError("")
+    setMfgDialogOpen(true)
+  }
+
+  async function handleMfgSubmit() {
+    setMfgSaving(true)
+    setMfgError("")
+    try {
+      const fd = new FormData()
+      if (editingMfg) fd.append("id", editingMfg.id)
+      fd.append("name", mfgForm.name.trim())
+      fd.append("sort_order", mfgForm.sort_order)
+      fd.append("is_active", String(mfgForm.is_active))
+      const result = editingMfg
+        ? await updateManufacturer(fd)
+        : await createManufacturer(fd)
+      if (result?.error) {
+        setMfgError(result.error)
+        return
+      }
+      toast.success(editingMfg ? "Manufacturer updated" : "Manufacturer added")
+      // Reflect locally so we don't need a full page refetch
+      if (editingMfg) {
+        setManufacturers((list) =>
+          list
+            .map((m) =>
+              m.id === editingMfg.id
+                ? {
+                    ...m,
+                    name: mfgForm.name.trim(),
+                    sort_order: Number(mfgForm.sort_order) || 0,
+                    is_active: mfgForm.is_active,
+                  }
+                : m,
+            )
+            .sort((a, b) => a.name.localeCompare(b.name)),
+        )
+      } else {
+        // We don't have the new id locally; refresh via location reload is overkill,
+        // so optimistically prepend with a temp id and let server revalidation backfill.
+        setManufacturers((list) =>
+          [
+            ...list,
+            {
+              id: `__pending-${Date.now()}`,
+              name: mfgForm.name.trim(),
+              sort_order: Number(mfgForm.sort_order) || 0,
+              is_active: mfgForm.is_active,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          ].sort((a, b) => a.name.localeCompare(b.name)),
+        )
+      }
+      setMfgDialogOpen(false)
+    } finally {
+      setMfgSaving(false)
+    }
+  }
+
+  async function handleMfgToggle(mfg: Manufacturer) {
+    const next = !mfg.is_active
+    setManufacturers((list) =>
+      list.map((m) => (m.id === mfg.id ? { ...m, is_active: next } : m)),
+    )
+    const result = await setManufacturerActive(mfg.id, next)
+    if (result?.error) {
+      toast.error(result.error)
+      // Revert
+      setManufacturers((list) =>
+        list.map((m) => (m.id === mfg.id ? { ...m, is_active: !next } : m)),
+      )
+    }
+  }
+
+  const filteredMfgs = mfgSearch.trim()
+    ? manufacturers.filter((m) =>
+        m.name.toLowerCase().includes(mfgSearch.trim().toLowerCase()),
+      )
+    : manufacturers
 
   // =========================================================================
   // RENDER
@@ -506,6 +630,7 @@ export function AdminPanel({
           <TabsTrigger value="routing">Routing Rules</TabsTrigger>
           <TabsTrigger value="fields">Field Definitions</TabsTrigger>
           <TabsTrigger value="buyers">Buyers</TabsTrigger>
+          <TabsTrigger value="manufacturers">Manufacturers</TabsTrigger>
         </TabsList>
 
         {/* ================================================================
@@ -855,7 +980,171 @@ export function AdminPanel({
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* ================================================================
+            MANUFACTURERS TAB
+            ================================================================ */}
+        <TabsContent value="manufacturers">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div className="flex items-center gap-3">
+                <CardTitle className="text-base">Manufacturers</CardTitle>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search manufacturers..."
+                    value={mfgSearch}
+                    onChange={(e) => setMfgSearch(e.target.value)}
+                    className="h-8 w-56 pl-8"
+                  />
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {filteredMfgs.length} of {manufacturers.length}
+                </span>
+              </div>
+              <Button size="sm" onClick={openCreateMfg}>
+                <Plus className="h-4 w-4" />
+                Add Manufacturer
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Inactive manufacturers stay in the table but don&rsquo;t appear in
+                the asset-form dropdown. Typed one-offs on assets are NOT added
+                here automatically.
+              </p>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead className="w-24 text-right">Sort</TableHead>
+                    <TableHead className="w-28">Active</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredMfgs.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center text-muted-foreground h-20">
+                        {mfgSearch ? "No manufacturers match your search." : "No manufacturers."}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredMfgs.map((mfg) => (
+                      <TableRow key={mfg.id}>
+                        <TableCell className="font-medium">{mfg.name}</TableCell>
+                        <TableCell className="text-right text-muted-foreground">
+                          {mfg.sort_order}
+                        </TableCell>
+                        <TableCell>
+                          <Switch
+                            checked={mfg.is_active}
+                            onCheckedChange={() => handleMfgToggle(mfg)}
+                            aria-label={`Toggle active for ${mfg.name}`}
+                          />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              onClick={() => openEditMfg(mfg)}
+                              title="Edit"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              onClick={() =>
+                                setDeleteConfirm({
+                                  type: "manufacturer",
+                                  id: mfg.id,
+                                  name: mfg.name,
+                                })
+                              }
+                              title="Delete"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      {/* Manufacturer Create/Edit Dialog */}
+      <Dialog open={mfgDialogOpen} onOpenChange={setMfgDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingMfg ? "Edit Manufacturer" : "Add Manufacturer"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingMfg
+                ? "Update the manufacturer entry."
+                : "Add a new manufacturer to the master list."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {mfgError && (
+              <p className="text-sm text-destructive">{mfgError}</p>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="mfg-name">Name *</Label>
+              <Input
+                id="mfg-name"
+                value={mfgForm.name}
+                onChange={(e) => setMfgForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="e.g. Dell, Cisco"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="mfg-sort">Sort Order</Label>
+                <Input
+                  id="mfg-sort"
+                  type="number"
+                  value={mfgForm.sort_order}
+                  onChange={(e) =>
+                    setMfgForm((f) => ({ ...f, sort_order: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="flex items-end gap-3">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="mfg-active"
+                    checked={mfgForm.is_active}
+                    onCheckedChange={(v) =>
+                      setMfgForm((f) => ({ ...f, is_active: v }))
+                    }
+                  />
+                  <Label htmlFor="mfg-active">Active</Label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setMfgDialogOpen(false)}
+              disabled={mfgSaving}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleMfgSubmit} disabled={mfgSaving}>
+              {mfgSaving ? "Saving..." : editingMfg ? "Save Changes" : "Add Manufacturer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ================================================================
           DIALOGS

@@ -42,6 +42,7 @@ import {
   UserPlus,
 } from "lucide-react"
 import { toast } from "sonner"
+import { ManufacturerCombobox } from "@/components/shared/manufacturer-combobox"
 import { DynamicFields } from "./dynamic-fields"
 import { InternalIdDisplay } from "@/components/shared/internal-id-display"
 import type {
@@ -429,7 +430,7 @@ export function AssetEditForm({
                   <div className="flex items-center space-x-2"><RadioGroupItem value="bulk" id="e-bulk" /><Label htmlFor="e-bulk" className="font-normal">Bulk</Label></div>
                 </RadioGroup>
               </div>
-              <div className="space-y-2"><Label>Manufacturer</Label><Input value={manufacturer} onChange={(e) => setManufacturer(e.target.value)} /></div>
+              <div className="space-y-2"><Label>Manufacturer</Label><ManufacturerCombobox value={manufacturer} onValueChange={setManufacturer} /></div>
               <div className="space-y-2"><Label>MFG Model Number</Label><Input value={model} onChange={(e) => setModel(e.target.value)} /></div>
               <div className="space-y-2"><Label>Model Name</Label><Input value={modelName} onChange={(e) => setModelName(e.target.value)} /></div>
               <div className="space-y-2"><Label>MFG Part Number</Label><Input value={mfgPartNumber} onChange={(e) => setMfgPartNumber(e.target.value)} /></div>

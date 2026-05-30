@@ -618,3 +618,20 @@ Error handling hardened:
 - `client_portal_user` RLS was previously based on `clients.contact_email` — left as-is for now since no portal users exist; will be revisited when that phase ships.
 - Test fixture id-prefix convention: `TEST7A-` for unit, `E2E7A-` for e2e, `TST7A`/`E2E7A` for transactions. Extended `deleteTransactionsByPrefix` to cascade through inventory/journal/assets so reruns are self-cleaning.
 
+
+## Phase 7b — Manufacturer Dropdown
+
+**What was done:**
+- Migration `00008_manufacturers.sql`: new `manufacturers` table (id, name UNIQUE, sort_order, is_active, timestamps) seeded with 126 names from `docs/Mfg Names.xlsx` — "No Mfg Name" sentinel dropped per Amber. Indexed on name + partial index on `is_active = true`. RLS: all internal users read, admins manage.
+- New `ManufacturerCombobox` (`components/shared/manufacturer-combobox.tsx`): shadcn Popover + Command, lazy-loads active manufacturers on first open, autocompletes by substring. Free-text one-offs are first-class via an explicit "Use 'foo' as a one-off" command item — typed values go to `assets.manufacturer` as-is but are NOT auto-promoted into the master table.
+- Replaced the old `<Input list="manufacturer-list">` (with hardcoded `COMMON_MANUFACTURERS` constant) on both the intake form and the asset edit Product Info tab.
+- Admin panel grew a 5th tab "Manufacturers": search box with "X of Y" counter, sort_order display, active toggle (Switch), edit dialog, delete with confirmation. Inactive rows stay in the admin list but vanish from the intake combobox.
+- Server actions added: createManufacturer (with duplicate-name handling), updateManufacturer, setManufacturerActive, deleteManufacturer.
+- Tests: 8 vitest schema/behavior tests + 6 playwright e2e tests — 14/14 passing. Cumulative project total: 30/30.
+
+**Notable decisions:**
+- Did not regenerate types via `supabase gen types`; hand-added the `manufacturers` table to `lib/supabase/types.ts` following the `Relationships: []` convention.
+- UNIQUE constraint is case-sensitive — `Dell` and `dell` are distinct keys. This was a confirmed design point (Amber wants to avoid the pollution, but enforcement is at the human level via the admin tab + combobox autocomplete suggestions, not via DB normalization).
+- Optimistic UI in admin: a newly-created manufacturer renders immediately with a `__pending-<ts>` id while the next page load backfills the real id. Trade-off: simpler than a refetch.
+- `shouldFilter={true}` on the combobox is intentional — the full active list is loaded once and cmdk handles client-side substring matching. The global Cmd+K uses `shouldFilter={false}` because results are server-filtered.
+

@@ -532,26 +532,27 @@
 - [x] Note: client_portal_user RLS is currently based on `clients.contact_email` which is being moved to locations — revisit when client portal is actually deployed (no active portal users yet)
 - [x] Tests: 9 vitest schema/invariant tests, 7 playwright e2e tests — 16/16 passing
 
-### 7b — Manufacturer Dropdown
-- [ ] Write migration `supabase/migrations/00008_manufacturers.sql`:
-  - [ ] Create `manufacturers` table (id, name TEXT UNIQUE NOT NULL, sort_order INTEGER, is_active BOOLEAN DEFAULT true, created_at, updated_at)
-  - [ ] Seed from `docs/Mfg Names.xlsx` (126 names — drop "No Mfg Name")
-  - [ ] Index `idx_manufacturers_name` on `manufacturers(name)`
-  - [ ] RLS: all authenticated read; admin manage
-- [ ] Regenerate TypeScript types
-- [ ] Build `components/shared/manufacturer-combobox.tsx`:
-  - [ ] Uses shadcn `Popover` + `Command` (no new dependency)
-  - [ ] Autocomplete from `manufacturers` table (server fetch on mount or pre-load list)
-  - [ ] Free-text entry allowed — typed value goes to `assets.manufacturer` as-is
-  - [ ] Typed one-offs are NOT auto-inserted into `manufacturers` table (per Amber — avoids "Dell"/"DELL"/"dell" pollution)
-- [ ] Replace `manufacturer` text Input in `components/forms/intake-form.tsx` with `<ManufacturerCombobox>`
-- [ ] Replace `manufacturer` text Input in `components/forms/asset-form/product-info-tab.tsx` with `<ManufacturerCombobox>`
-- [ ] Add Manufacturers tab to admin panel (`app/(app)/admin/page.tsx` — now 5 tabs):
-  - [ ] List with search + sort
-  - [ ] Create/edit/delete dialog (admin-actions client component)
-  - [ ] Active/inactive toggle (Switch)
-  - [ ] Delete confirmation (AlertDialog)
-- [ ] Server actions in `app/(app)/admin/actions.ts`: createManufacturer, updateManufacturer, deleteManufacturer
+### 7b — Manufacturer Dropdown ✅
+- [x] Write migration `supabase/migrations/00008_manufacturers.sql`:
+  - [x] Create `manufacturers` table (id, name TEXT UNIQUE NOT NULL, sort_order INTEGER, is_active BOOLEAN DEFAULT true, created_at, updated_at)
+  - [x] Seed from `docs/Mfg Names.xlsx` (126 names — drop "No Mfg Name")
+  - [x] Index `idx_manufacturers_name` on `manufacturers(name)` + partial index on `is_active = true`
+  - [x] RLS: all internal users read; admin manage
+- [x] Regenerate TypeScript types (`Manufacturer` exported)
+- [x] Build `components/shared/manufacturer-combobox.tsx`:
+  - [x] Uses shadcn `Popover` + `Command` (no new dependency)
+  - [x] Lazy autocomplete from `manufacturers` table on first open
+  - [x] Free-text entry allowed — typed value goes to `assets.manufacturer` as-is
+  - [x] Typed one-offs are NOT auto-inserted into `manufacturers` table — explicit "Use 'foo' as a one-off" item makes the path obvious
+- [x] Replace `manufacturer` text Input in `components/forms/intake-form.tsx` with `<ManufacturerCombobox>` (removed `COMMON_MANUFACTURERS` constant)
+- [x] Replace `manufacturer` text Input in `components/forms/asset-form/asset-edit-form.tsx` (Product Info tab) with `<ManufacturerCombobox>`
+- [x] Add Manufacturers tab to admin panel (`app/(app)/admin/page.tsx` — now 5 tabs):
+  - [x] List with search + sort_order display
+  - [x] Create/edit/delete dialog
+  - [x] Active/inactive toggle (Switch)
+  - [x] Delete confirmation (AlertDialog via shared `deleteConfirm` flow)
+- [x] Server actions in `app/(app)/admin/actions.ts`: createManufacturer, updateManufacturer, setManufacturerActive, deleteManufacturer
+- [x] Tests: 8 vitest schema/behavior tests + 6 playwright e2e tests — 14/14 passing
 
 ### 7c — New Tablet Asset Type
 - [ ] Write migration `supabase/migrations/00009_tablet_asset_type.sql`:
@@ -655,6 +656,6 @@
 | Phase 4: Dashboard, Admin & Analytics | Complete | 4.1 ✅, 4.2 ✅, 4.3 ✅, 4.4 ✅, 4.5 ✅ |
 | Phase 5: Hardening & Tester Feedback v1 | Complete | 5.1 ✅, 5.2a ✅, 5.2b ✅, 5.2c ✅, 5.2d ✅, 5.2e ✅ |
 | Phase 6: Tester Feedback v2 | Complete | 6a ✅, 6b ✅, 6c ✅ |
-| Phase 7: Tester Feedback v3 | In Progress | 7a ✅, 7b mfg dropdown, 7c tablet, 7d field additions, 7e reset button |
+| Phase 7: Tester Feedback v3 | In Progress | 7a ✅, 7b ✅, 7c tablet, 7d field additions, 7e reset button |
 | Phase 11: Production Deployment | Not Started | Vercel setup |
 | Phase 12: Data Migration | Not Started | Caspio export + import script |

@@ -111,3 +111,14 @@
 ### Issue: `getByText("Primary", { exact: true })` matched two elements in a row
 - Test seeded a location with the default name "Primary" (from `createTestClientWithLocation`), which collided with the "Primary" badge text inside the same `<li>`.
 - **Fix**: Test helpers `createTestClientWithLocation` and `addLocation` accept explicit `locationName`. Pass distinct names from tests to avoid badge-vs-name collision.
+
+## Phase 7b
+
+### Issue: Cleanup helper used case-sensitive `LIKE`, leaving lowercase variants behind across runs
+- `deleteManufacturersByPrefix` originally used `.like("name", "TEST7B-%")`. Postgres `LIKE` is case-sensitive, so a test that intentionally inserted a lowercase variant of a test fixture (to confirm the constraint is case-sensitive) left the lowercase row behind across runs.
+- Next run's seed-count assertion saw 127 rows instead of 126, and the duplicate-rejection test failed on a stale row.
+- **Fix**: Switched `deleteManufacturersByPrefix` to `.ilike(...)` so both cases get caught. Documented the case-sensitivity of the UNIQUE constraint as a confirmed design point.
+
+### Issue: Selector ambiguity — "Manufacturers" appears as both TabsTrigger and CardTitle
+- `getByText("Manufacturers", { exact: true })` matched two elements on the admin page once the tab was active: the TabsTrigger button and the CardTitle inside the panel.
+- **Fix**: Replaced the heading-style assertion with row-cell assertions (`getByRole("cell", { name: "Dell", exact: true })`) that uniquely target table content. Same pattern as the 7a fix — shadcn primitives don't expose `role="heading"` so prefer content-level selectors.

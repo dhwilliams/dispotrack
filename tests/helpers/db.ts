@@ -182,3 +182,47 @@ export async function adminUserId(): Promise<string> {
   const email = process.env.TEST_ADMIN_EMAIL || "admin@logistasolutions.com";
   return userIdByEmail(email);
 }
+
+/** Cleanup: delete manufacturers whose name starts with prefix (case-insensitive).
+ *
+ * Uses ilike so lowercase/uppercase variants both get caught. The manufacturers
+ * UNIQUE constraint is case-sensitive, so a single test run may leave both
+ * "Foo" and "foo" rows behind; this helper sweeps both. */
+export async function deleteManufacturersByPrefix(prefix: string): Promise<number> {
+  const { data, error } = await adminDb()
+    .from("manufacturers")
+    .delete()
+    .ilike("name", `${prefix}%`)
+    .select("id");
+  if (error) throw error;
+  return data?.length ?? 0;
+}
+
+/** Create a transaction tied to the primary location of an existing client.
+ *  Used by intake / asset e2e tests that need a real txn but don't care which client. */
+export async function createTestTransaction(opts: {
+  transactionNumber: string;
+  transactionDate?: string;
+}): Promise<{ id: string; clientId: string; locationId: string }> {
+  const db = adminDb();
+  const { data: loc } = await db
+    .from("client_locations")
+    .select("id, client_id")
+    .eq("is_primary", true)
+    .limit(1)
+    .single();
+  if (!loc) throw new Error("No primary location available for fixture");
+
+  const { data: txn, error } = await db
+    .from("transactions")
+    .insert({
+      transaction_number: opts.transactionNumber,
+      transaction_date: opts.transactionDate ?? "2026-05-24",
+      client_id: loc.client_id,
+      client_location_id: loc.id,
+    })
+    .select("id")
+    .single();
+  if (error || !txn) throw error ?? new Error("transaction insert failed");
+  return { id: txn.id, clientId: loc.client_id, locationId: loc.id };
+}

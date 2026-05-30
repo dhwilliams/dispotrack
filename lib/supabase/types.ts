@@ -789,6 +789,33 @@ export type Database = {
         }
         Relationships: []
       }
+      manufacturers: {
+        Row: {
+          id: string
+          name: string
+          sort_order: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           id: string
@@ -875,6 +902,7 @@ export type InventoryJournal = Tables<'inventory_journal'>
 export type ClientRevenueTerms = Tables<'client_revenue_terms'>
 export type AssetSettlement = Tables<'asset_settlement'>
 export type RoutingRule = Tables<'routing_rules'>
+export type Manufacturer = Tables<'manufacturers'>
 export type UserProfile = Tables<'user_profiles'>
 
 // Enum types extracted for reuse
