@@ -554,21 +554,25 @@
 - [x] Server actions in `app/(app)/admin/actions.ts`: createManufacturer, updateManufacturer, setManufacturerActive, deleteManufacturer
 - [x] Tests: 8 vitest schema/behavior tests + 6 playwright e2e tests — 14/14 passing
 
-### 7c — New Tablet Asset Type
-- [ ] Write migration `supabase/migrations/00009_tablet_asset_type.sql`:
-  - [ ] ALTER `assets` CHECK constraint to include `'tablet'` (drop + recreate constraint)
-  - [ ] Seed `asset_type_field_definitions` for tablet:
+### 7c — New Tablet Asset Type ✅
+- [x] Write migration `supabase/migrations/00009_tablet_asset_type.sql`:
+  - [x] ALTER `assets` CHECK constraint to include `'tablet'` (drop + recreate constraint)
+  - [x] ALTER `asset_type_field_definitions` CHECK constraint same way
+  - [x] Seed `asset_type_field_definitions` for tablet (10 rows):
     - Hardware group: cpu_info (json_array), total_memory (text), color (text)
     - Type-specific group: battery, battery_held_30min, webcam, screen_size, screen_condition, keyboard_works, ac_adapter
-    - Explicitly OMIT: optical_drive_type (per Amber), laptop_screen_program_ran_successfully (laptop-only per Amber)
-- [ ] Regenerate TypeScript types (asset_type union now includes 'tablet')
-- [ ] Add tablet to asset type Select options:
-  - [ ] `components/forms/intake-form.tsx`
-  - [ ] `components/forms/asset-form/product-info-tab.tsx`
-  - [ ] `app/(app)/assets/page.tsx` filter dropdown
-- [ ] Add tablet color to `components/shared/asset-type-badge.tsx` (pick a distinct color e.g. fuchsia/pink)
-- [ ] Update `CLAUDE.md` asset types table to add tablet row
-- [ ] Update `.agents/workflow-expert.md` common asset types list
+    - Explicitly OMITTED: optical_drive_type (per Amber), laptop_screen_program_ran_successfully (laptop-only per Amber)
+- [x] Regenerate TypeScript types (asset_type union now includes 'tablet' — 6 occurrences updated)
+- [x] Add tablet to asset type Select options (4 surfaces):
+  - [x] `components/forms/intake-form.tsx`
+  - [x] `components/forms/asset-form/asset-edit-form.tsx`
+  - [x] `components/tables/asset-filters.tsx`
+  - [x] `app/(app)/admin/admin-panel.tsx`
+  - [x] Server-side type casts widened: `app/(app)/assets/page.tsx`, `app/api/export/route.ts`
+- [x] Add tablet color to dashboard `TYPE_COLORS` map (pink — distinct from violet/laptop, fuchsia/tv, rose/server). No dedicated AssetTypeBadge component exists — out of scope for 7c.
+- [x] Update `CLAUDE.md` asset types table to add tablet row
+- [x] Update `.agents/workflow-expert.md` common asset types list
+- [x] Tests: 8 vitest schema/seed tests + 4 playwright e2e tests — 12/12 passing
 
 ### 7d — Asset Type Field Additions & Intake Descriptions
 - [ ] Write migration `supabase/migrations/00010_field_additions.sql`:
@@ -656,6 +660,6 @@
 | Phase 4: Dashboard, Admin & Analytics | Complete | 4.1 ✅, 4.2 ✅, 4.3 ✅, 4.4 ✅, 4.5 ✅ |
 | Phase 5: Hardening & Tester Feedback v1 | Complete | 5.1 ✅, 5.2a ✅, 5.2b ✅, 5.2c ✅, 5.2d ✅, 5.2e ✅ |
 | Phase 6: Tester Feedback v2 | Complete | 6a ✅, 6b ✅, 6c ✅ |
-| Phase 7: Tester Feedback v3 | In Progress | 7a ✅, 7b ✅, 7c tablet, 7d field additions, 7e reset button |
+| Phase 7: Tester Feedback v3 | In Progress | 7a ✅, 7b ✅, 7c ✅, 7d field additions, 7e reset button |
 | Phase 11: Production Deployment | Not Started | Vercel setup |
 | Phase 12: Data Migration | Not Started | Caspio export + import script |

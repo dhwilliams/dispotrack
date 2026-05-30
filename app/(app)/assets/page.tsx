@@ -93,7 +93,7 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
       `internal_asset_id.ilike.${p},serial_number.ilike.${p},model.ilike.${p},asset_tag.ilike.${p}`,
     )
   }
-  if (asset_type) query = query.eq("asset_type", asset_type as "desktop" | "server" | "laptop" | "monitor" | "printer" | "phone" | "tv" | "network" | "other")
+  if (asset_type) query = query.eq("asset_type", asset_type as "desktop" | "server" | "laptop" | "tablet" | "monitor" | "printer" | "phone" | "tv" | "network" | "other")
   if (status) query = query.eq("status", status as "received" | "in_process" | "tested" | "graded" | "sanitized" | "available" | "sold" | "recycled" | "on_hold")
   if (tracking_mode) query = query.eq("tracking_mode", tracking_mode as "serialized" | "bulk")
   if (destination) query = query.eq("asset_destination", destination as "external_reuse" | "recycle" | "internal_reuse" | "pending")

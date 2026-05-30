@@ -142,7 +142,7 @@ export type Database = {
           serial_generated: boolean
           transaction_id: string
           serial_number: string | null
-          asset_type: 'desktop' | 'server' | 'laptop' | 'monitor' | 'printer' | 'phone' | 'tv' | 'network' | 'other'
+          asset_type: 'desktop' | 'server' | 'laptop' | 'tablet' | 'monitor' | 'printer' | 'phone' | 'tv' | 'network' | 'other'
           tracking_mode: 'serialized' | 'bulk'
           manufacturer: string | null
           model: string | null
@@ -168,7 +168,7 @@ export type Database = {
           serial_generated?: boolean
           transaction_id: string
           serial_number?: string | null
-          asset_type: 'desktop' | 'server' | 'laptop' | 'monitor' | 'printer' | 'phone' | 'tv' | 'network' | 'other'
+          asset_type: 'desktop' | 'server' | 'laptop' | 'tablet' | 'monitor' | 'printer' | 'phone' | 'tv' | 'network' | 'other'
           tracking_mode?: 'serialized' | 'bulk'
           manufacturer?: string | null
           model?: string | null
@@ -194,7 +194,7 @@ export type Database = {
           serial_generated?: boolean
           transaction_id?: string
           serial_number?: string | null
-          asset_type?: 'desktop' | 'server' | 'laptop' | 'monitor' | 'printer' | 'phone' | 'tv' | 'network' | 'other'
+          asset_type?: 'desktop' | 'server' | 'laptop' | 'tablet' | 'monitor' | 'printer' | 'phone' | 'tv' | 'network' | 'other'
           tracking_mode?: 'serialized' | 'bulk'
           manufacturer?: string | null
           model?: string | null
@@ -330,7 +330,7 @@ export type Database = {
       asset_type_field_definitions: {
         Row: {
           id: string
-          asset_type: 'desktop' | 'server' | 'laptop' | 'monitor' | 'printer' | 'phone' | 'tv' | 'network' | 'other'
+          asset_type: 'desktop' | 'server' | 'laptop' | 'tablet' | 'monitor' | 'printer' | 'phone' | 'tv' | 'network' | 'other'
           field_name: string
           field_label: string
           field_type: 'text' | 'number' | 'boolean' | 'select' | 'textarea' | 'json_array'
@@ -343,7 +343,7 @@ export type Database = {
         }
         Insert: {
           id?: string
-          asset_type: 'desktop' | 'server' | 'laptop' | 'monitor' | 'printer' | 'phone' | 'tv' | 'network' | 'other'
+          asset_type: 'desktop' | 'server' | 'laptop' | 'tablet' | 'monitor' | 'printer' | 'phone' | 'tv' | 'network' | 'other'
           field_name: string
           field_label: string
           field_type: 'text' | 'number' | 'boolean' | 'select' | 'textarea' | 'json_array'
@@ -356,7 +356,7 @@ export type Database = {
         }
         Update: {
           id?: string
-          asset_type?: 'desktop' | 'server' | 'laptop' | 'monitor' | 'printer' | 'phone' | 'tv' | 'network' | 'other'
+          asset_type?: 'desktop' | 'server' | 'laptop' | 'tablet' | 'monitor' | 'printer' | 'phone' | 'tv' | 'network' | 'other'
           field_name?: string
           field_label?: string
           field_type?: 'text' | 'number' | 'boolean' | 'select' | 'textarea' | 'json_array'

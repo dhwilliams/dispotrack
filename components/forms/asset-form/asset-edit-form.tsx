@@ -59,7 +59,7 @@ import type {
 } from "@/lib/supabase/types"
 
 const ASSET_TYPES = [
-  "desktop", "server", "laptop", "monitor", "printer",
+  "desktop", "server", "laptop", "tablet", "monitor", "printer",
   "phone", "tv", "network", "other",
 ] as const
 

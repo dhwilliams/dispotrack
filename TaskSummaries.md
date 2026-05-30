@@ -635,3 +635,18 @@ Error handling hardened:
 - Optimistic UI in admin: a newly-created manufacturer renders immediately with a `__pending-<ts>` id while the next page load backfills the real id. Trade-off: simpler than a refetch.
 - `shouldFilter={true}` on the combobox is intentional — the full active list is loaded once and cmdk handles client-side substring matching. The global Cmd+K uses `shouldFilter={false}` because results are server-filtered.
 
+
+## Phase 7c — New Tablet Asset Type
+
+**What was done:**
+- Migration `00009_tablet_asset_type.sql`: extended both `assets_asset_type_check` and `asset_type_field_definitions_asset_type_check` CHECK constraints to include `'tablet'` (drop + recreate pattern). Seeded 10 field definitions for tablet — 3 hardware (cpu_info, total_memory, color) + 7 type-specific (battery, battery_held_30min, webcam, screen_size, screen_condition, keyboard_works, ac_adapter). Explicitly omitted `optical_drive_type` and `laptop_screen_program_ran_successfully` per Amber.
+- Types: `'tablet'` added to all 6 occurrences of the asset_type literal union in `lib/supabase/types.ts`.
+- UI: 4 client-side ASSET_TYPES arrays updated (intake form, asset edit form, asset-filters, admin-panel field definitions). 2 server-side type casts widened (assets page filter, export route). Dashboard `TYPE_COLORS` map gained `tablet: bg-pink-100 text-pink-800`.
+- Docs: CLAUDE.md asset types table got a Tablet row; `.agents/workflow-expert.md` common types list inserted Tablet at position 9.
+- Tests: 8 vitest + 4 playwright = 12 new tests, all passing on the first run. Cumulative: 42/42 passing.
+
+**Notable decisions:**
+- No dedicated `AssetTypeBadge` component was created — only the dashboard's local `TYPE_COLORS` map colors asset types; everywhere else renders `<Badge variant="outline">` plain text. Adding tablet to that one map was enough.
+- Hard Drives section is intentionally hidden for tablets (existing gate `["desktop","server","laptop"].includes(assetType)` left in place). Tablets typically have non-removable storage; if a customer ever needs HD tracking, adding `"tablet"` to those 3 gates is a one-liner.
+- Pink chosen for the tablet badge color to stay distinct from violet (laptop), fuchsia (tv), and rose (server).
+

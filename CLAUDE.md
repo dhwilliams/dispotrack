@@ -120,6 +120,7 @@ All assets share: internal_asset_id (auto), serial_number (optional), asset_type
 | Desktop | CPU, memory, optical drive, chassis type, color | — |
 | Server | CPU, memory, chassis type, color | — |
 | Laptop | CPU, memory, optical drive, color | battery, battery_held_30min, webcam, screen_size, screen_condition, keyboard_works, ac_adapter |
+| Tablet | CPU, memory, color | battery, battery_held_30min, webcam, screen_size, screen_condition, keyboard_works, ac_adapter (no optical drive, no laptop-screen-program field) |
 | Monitor | — | screen_size, screen_condition, color |
 | Printer | — | printer_type, sheet_tray, duplexer, page_count, laser_or_inkjet, new_used_toner, wireless, serial_cable, num_ports |
 | Phone | — | phone_receiver, receiver_cord, cordless |

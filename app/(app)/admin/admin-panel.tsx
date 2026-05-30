@@ -127,6 +127,7 @@ const ASSET_TYPES: { value: AssetType; label: string }[] = [
   { value: "desktop", label: "Desktop" },
   { value: "server", label: "Server" },
   { value: "laptop", label: "Laptop" },
+  { value: "tablet", label: "Tablet" },
   { value: "monitor", label: "Monitor" },
   { value: "printer", label: "Printer" },
   { value: "phone", label: "Phone" },

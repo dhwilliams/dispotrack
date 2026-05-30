@@ -254,7 +254,8 @@ Dell (most common by far), HP, Lenovo, Apple, DataCard, Cisco, various others.
 6. Other (card printers, specialized equipment)
 7. Phone
 8. Network equipment
-9. TV (rare)
+9. Tablet (added Phase 7c — mirrors laptop fields minus optical drive)
+10. TV (rare)
 
 ### Chassis Types
 - SFF Desktop (Small Form Factor — most common)
