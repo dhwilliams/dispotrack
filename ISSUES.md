@@ -134,3 +134,15 @@
 - Prompt assumed `description` was seeded for both `other` and `network` ("Pull the field definition from asset_type_field_definitions where field_name='description' for that type (already seeded)").
 - DB check showed only `other.description` was seeded in migration 00003 — `network` was never given a description field.
 - **Fix**: added `network.description` as a third INSERT in migration `00010_field_additions.sql` so the "render description at intake for other AND network" contract has a matching field_definition for both types. Edit form's Type-Specific tab now also renders description for network assets.
+
+## Phase 7e
+
+### Issue (test-side only): manufacturer combobox selector ambiguity
+- Initial e2e selectors used `getByRole("combobox", { name: /lenovo/i })` and `name: /select or type manufacturer/i`. The intake page has 3+ elements with `role="combobox"` (Asset Type Select, Manufacturer combobox, Transaction Select), so name-based role queries didn't resolve cleanly.
+- **Fix**: switched to `page.locator("button#manufacturer")` — the combobox button accepts an `id` prop, so we set `id="manufacturer"` on the intake form and target it directly.
+
+### Issue (flake, not fixed): Phase 7a "mark primary" test occasionally returns null from client_locations
+- On one full-suite run (`npm test`), the 7a test `Locations section: add a second location, then mark primary` failed with `Cannot read properties of null (reading 'find')` on a `client_locations` DB query.
+- Re-running the test in isolation and as part of a fresh full suite — both passed.
+- Likely cause: brief race in the demote-then-promote `setPrimaryLocationAction` window when the DB hadn't yet propagated the new state to the subsequent SELECT.
+- **Mitigation if it recurs**: wrap the assertion in `expect.poll()`. Not fixed proactively because it's only happened once and the test passes consistently otherwise.

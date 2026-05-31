@@ -588,11 +588,13 @@
 - [x] No changes needed to the existing edit form — `description` field renders from field_definitions on the Type-Specific tab automatically
 - [x] Tests: 7 vitest schema/seed tests + 7 playwright e2e tests — 14/14 passing
 
-### 7e — Quick-Add Reset Form Button
-- [ ] Add "Reset Form" Button to `components/forms/intake-form.tsx` (positioned next to Submit, secondary variant)
-- [ ] On click: clear ALL fields — transaction, asset_type, manufacturer, model, model_name, mfg_part_number, asset_tag, quantity, weight, notes, serial_number, tracking_mode (reset to 'serialized')
-- [ ] If any field has user-entered content, show AlertDialog confirm: "Clear all fields? This won't affect assets already saved."
-- [ ] Default quick-add behavior unchanged (after Submit: keep transaction + type + mfg + model, clear serial/tag — per Phase 5.2b)
+### 7e — Quick-Add Reset Form Button ✅
+- [x] Add "Reset Form" Button to `components/forms/intake-form.tsx` (positioned next to Add Asset, secondary variant)
+- [x] On click: clear ALL fields — transaction, asset_type, manufacturer, model, model_name, mfg_part_number, asset_tag, quantity, weight, notes, serial_number, description, tracking_mode (reset to 'serialized')
+- [x] If any field has user-entered content, show AlertDialog confirm: "Clear all fields? Assets already saved are unaffected."
+- [x] Default quick-add behavior unchanged (after Submit: keep transaction + type + mfg + model, clear serial/tag — per Phase 5.2b)
+- [x] Existing "Clear All" ghost button (post-submit, partial reset preserving transaction) kept alongside the new full reset
+- [x] Tests: 6 playwright e2e tests — 6/6 passing (no vitest needed — pure UI behavior)
 
 ---
 
@@ -663,6 +665,6 @@
 | Phase 4: Dashboard, Admin & Analytics | Complete | 4.1 ✅, 4.2 ✅, 4.3 ✅, 4.4 ✅, 4.5 ✅ |
 | Phase 5: Hardening & Tester Feedback v1 | Complete | 5.1 ✅, 5.2a ✅, 5.2b ✅, 5.2c ✅, 5.2d ✅, 5.2e ✅ |
 | Phase 6: Tester Feedback v2 | Complete | 6a ✅, 6b ✅, 6c ✅ |
-| Phase 7: Tester Feedback v3 | In Progress | 7a ✅, 7b ✅, 7c ✅, 7d ✅, 7e reset button |
+| Phase 7: Tester Feedback v3 | Complete | 7a ✅, 7b ✅, 7c ✅, 7d ✅, 7e ✅ |
 | Phase 11: Production Deployment | Not Started | Vercel setup |
 | Phase 12: Data Migration | Not Started | Caspio export + import script |

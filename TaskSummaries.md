@@ -668,3 +668,21 @@ Error handling hardened:
 - Empty description on intake does NOT create an empty `asset_type_details` row — keeps the table clean and lets the edit form lazily create the row when the user fills fields later.
 - The intake form gates the description payload to the type, but the description state itself persists in memory across type switches (intentional UX nicety — avoids loss on a fat-fingered type change).
 
+
+## Phase 7e — Quick-Add Reset Form Button
+
+**What was done:**
+- Single-file change: `components/forms/intake-form.tsx`.
+- New "Reset Form" secondary-variant button rendered next to "Add Asset". Always visible.
+- New `resetEntireForm()` — wipes EVERYTHING including transaction picker + tracking_mode (back to 'serialized'). Builds on the existing `clearAllFields()`.
+- New `isFormDirty()` helper — returns true if any of the 11 form fields deviates from page-load defaults (transactionId, trackingMode, serialNumber, assetType, manufacturer, model, assetTag, quantity != "1", weight, notes, description).
+- AlertDialog confirm opens only when dirty; empty form resets silently.
+- Existing "Clear All" ghost button (post-submit, partial reset preserving transaction) kept alongside the new full reset — different workflows.
+- Tests: 6 playwright e2e — visibility, empty/dirty paths, Cancel preserves, Confirm wipes, post-submit 5.2b semantics still intact. Cumulative: 62/62 (32 vitest + 30 playwright). **Phase 7 complete.**
+
+**Notable decisions:**
+- Two reset surfaces intentionally coexist. "Clear All" (ghost, conditional, post-submit) preserves transaction context for batch entry. "Reset Form" (secondary, always visible) wipes everything. Same mental model as a "new asset" vs "new session" distinction.
+- `isFormDirty` includes `trackingMode !== "serialized"` and `quantity !== "1"` so switching to Bulk + qty != 1 also triggers the confirm.
+- Description state survives type switches in memory (avoids loss on a fat-fingered type change). Dirty check sees it regardless of current type render.
+- `initialTransactionId` URL param is NOT auto-restored after reset — the user clicked Reset Form, they get a clean slate even if they came in via deep-link.
+

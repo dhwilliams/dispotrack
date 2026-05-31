@@ -16,6 +16,16 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Table,
   TableBody,
   TableCell,
@@ -80,6 +90,7 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
   const [lastCreated, setLastCreated] = useState<CreatedAsset | null>(null)
   const [createdAssets, setCreatedAssets] = useState<CreatedAsset[]>([])
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null)
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false)
 
   const serialRef = useRef<HTMLDivElement>(null)
 
@@ -119,6 +130,34 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
       const input = serialRef.current?.querySelector("input")
       input?.focus()
     }, 100)
+  }
+
+  // Full reset (Phase 7e "Reset Form" button) — wipes EVERYTHING including
+  // the transaction picker and tracking mode. Differs from `clearAllFields`
+  // (used by the post-submit "Clear All" ghost button) which preserves the
+  // transaction context for batch entry.
+  function resetEntireForm() {
+    setTransactionId("")
+    setTrackingMode("serialized")
+    clearAllFields()
+  }
+
+  // Anything other than the page-load defaults counts as "dirty" — guards the
+  // confirm dialog so a fully-empty form resets silently with no nag.
+  function isFormDirty(): boolean {
+    return (
+      transactionId !== "" ||
+      trackingMode !== "serialized" ||
+      serialNumber !== "" ||
+      assetType !== "" ||
+      manufacturer !== "" ||
+      model !== "" ||
+      assetTag !== "" ||
+      quantity !== "1" ||
+      weight !== "" ||
+      notes !== "" ||
+      description !== ""
+    )
   }
 
   // Strip dashes/spaces and check for duplicate serial on blur
@@ -451,6 +490,20 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
             )}
             <Button
               type="button"
+              variant="secondary"
+              onClick={() => {
+                if (isFormDirty()) {
+                  setResetConfirmOpen(true)
+                } else {
+                  resetEntireForm()
+                }
+              }}
+              disabled={isPending}
+            >
+              Reset Form
+            </Button>
+            <Button
+              type="button"
               onClick={handleSubmit}
               disabled={isPending || !transactionId}
             >
@@ -469,6 +522,30 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Reset Form confirmation — opens only when the form has user-entered content */}
+      <AlertDialog open={resetConfirmOpen} onOpenChange={setResetConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear all fields?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This wipes the transaction, asset type, manufacturer, model, and
+              all other fields. Assets already saved are unaffected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                resetEntireForm()
+                setResetConfirmOpen(false)
+              }}
+            >
+              Clear Form
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Running List of Created Assets */}
       {createdAssets.length > 0 && (
