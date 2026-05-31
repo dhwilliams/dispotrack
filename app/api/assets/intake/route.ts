@@ -16,6 +16,10 @@ export async function POST(request: Request) {
   const quantityStr = formData.get("quantity") as string
   const weightStr = formData.get("weight") as string
   const notes = formData.get("notes") as string
+  // Optional: surfaced at intake only for asset_type 'other' and 'network'.
+  // Persisted into asset_type_details.details.description per the field
+  // definition for the type.
+  const description = formData.get("description") as string | null
 
   // Validation
   const fieldErrors: Record<string, string> = {}
@@ -51,6 +55,7 @@ export async function POST(request: Request) {
         | "desktop"
         | "server"
         | "laptop"
+        | "tablet"
         | "monitor"
         | "printer"
         | "phone"
@@ -78,6 +83,26 @@ export async function POST(request: Request) {
       { success: false, error: assetError.message },
       { status: 500 },
     )
+  }
+
+  // 1b. If a description was entered (other/network only at intake), seed
+  // asset_type_details with the description in the JSONB details column.
+  // This is the same row that the edit form's Type-Specific tab writes to.
+  const cleanedDescription = description?.trim() ?? ""
+  if (cleanedDescription && (assetType === "other" || assetType === "network")) {
+    const { error: detailsError } = await supabase
+      .from("asset_type_details")
+      .insert({
+        asset_id: asset.id,
+        details: { description: cleanedDescription },
+      })
+    if (detailsError) {
+      console.error(
+        "asset_type_details insert failed for asset",
+        asset.id,
+        detailsError.message,
+      )
+    }
   }
 
   // 2. Create inventory record

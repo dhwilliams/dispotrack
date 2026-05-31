@@ -650,3 +650,21 @@ Error handling hardened:
 - Hard Drives section is intentionally hidden for tablets (existing gate `["desktop","server","laptop"].includes(assetType)` left in place). Tablets typically have non-removable storage; if a customer ever needs HD tracking, adding `"tablet"` to those 3 gates is a one-liner.
 - Pink chosen for the tablet badge color to stay distinct from violet (laptop), fuchsia (tv), and rose (server).
 
+
+## Phase 7d — Asset Type Field Additions & Intake Descriptions
+
+**What was done:**
+- Migration `00010_field_additions.sql`: three INSERTs into `asset_type_field_definitions` (original prompt said two — `network.description` wasn't actually seeded in 00003, only `other.description` was, so I added it for symmetry):
+  1. `monitor.display_type` — select with `["CRT","LCD"]`, type_specific group, sort_order 0 (renders before screen_size)
+  2. `laptop.laptop_screen_program_ran_successfully` — boolean, type_specific, sort_order 17
+  3. `network.description` — textarea, type_specific, sort_order 0
+- Intake form: added `description` state + conditional Textarea (between Weight and Notes) gated to `asset_type === 'other' || 'network'`. Distinct placeholder per type. Cleared in both `clearForNextAsset` and `clearAllFields`. Submit payload only includes description when applicable.
+- Intake route handler: picks up `description`, inserts `asset_type_details` row with `details = { description: '...' }` when non-empty for other/network. Same row the edit form would later create. Bonus: widened the asset_type `as` cast to include `'tablet'` (small consistency fix carried over from 7c — was runtime-correct but TypeScript was lying).
+- Edit form: zero changes — both new field defs render dynamically from `asset_type_field_definitions` on the Type-Specific tab.
+- Tests: 7 vitest + 7 playwright = 14 new tests, cumulative 56/56 passing.
+
+**Notable decisions:**
+- Adding `network.description` was a third INSERT that wasn't in the spec. Discovered during the field-defs DB check that only `other` had it seeded. Adding it makes the "render description at intake for other AND network" contract symmetric, and lets the edit form's Type-Specific tab show description for network assets too.
+- Empty description on intake does NOT create an empty `asset_type_details` row — keeps the table clean and lets the edit form lazily create the row when the user fills fields later.
+- The intake form gates the description payload to the type, but the description state itself persists in memory across type switches (intentional UX nicety — avoids loss on a fat-fingered type change).
+

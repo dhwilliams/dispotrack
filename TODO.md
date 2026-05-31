@@ -574,16 +574,19 @@
 - [x] Update `.agents/workflow-expert.md` common asset types list
 - [x] Tests: 8 vitest schema/seed tests + 4 playwright e2e tests — 12/12 passing
 
-### 7d — Asset Type Field Additions & Intake Descriptions
-- [ ] Write migration `supabase/migrations/00010_field_additions.sql`:
-  - [ ] INSERT into `asset_type_field_definitions`:
-    - `monitor.display_type` (select, field_options `["CRT","LCD"]`, type_specific group, sort_order placed before screen_size)
-    - `laptop.laptop_screen_program_ran_successfully` (boolean, type_specific group)
-- [ ] Intake form (`components/forms/intake-form.tsx`):
-  - [ ] When `asset_type` is `other` or `network`, fetch the field definition for `description` for that type and render a Textarea
-  - [ ] On submit, include `description` in the JSONB payload passed to the intake route handler
-- [ ] Update `app/api/assets/intake/route.ts`: accept optional `description` and persist into `asset_type_details.details.description` on the create
-- [ ] No changes needed to the existing edit form — `description` field will continue to render from field_definitions on the Type-Specific tab
+### 7d — Asset Type Field Additions & Intake Descriptions ✅
+- [x] Write migration `supabase/migrations/00010_field_additions.sql`:
+  - [x] INSERT into `asset_type_field_definitions`:
+    - `monitor.display_type` (select, field_options `["CRT","LCD"]`, type_specific group, sort_order 0 — renders before screen_size)
+    - `laptop.laptop_screen_program_ran_successfully` (boolean, type_specific group, sort_order 17)
+    - `network.description` (textarea, type_specific group, sort_order 0) — added because original 00003 seed only had description for `other`, not `network`; needed so the intake form contract is symmetric
+- [x] Intake form (`components/forms/intake-form.tsx`):
+  - [x] When `asset_type` is `other` or `network`, render a Textarea for `description` (above Notes, with type-specific placeholder text)
+  - [x] On submit, include `description` in the form payload only when applicable
+  - [x] Reset `description` in both `clearForNextAsset` and `clearAllFields`
+- [x] Update `app/api/assets/intake/route.ts`: accept optional `description`, insert `asset_type_details` row with `{description: '...'}` when non-empty for other/network. Bonus: widened asset_type cast to include `'tablet'` (leftover gap from 7c).
+- [x] No changes needed to the existing edit form — `description` field renders from field_definitions on the Type-Specific tab automatically
+- [x] Tests: 7 vitest schema/seed tests + 7 playwright e2e tests — 14/14 passing
 
 ### 7e — Quick-Add Reset Form Button
 - [ ] Add "Reset Form" Button to `components/forms/intake-form.tsx` (positioned next to Submit, secondary variant)
@@ -660,6 +663,6 @@
 | Phase 4: Dashboard, Admin & Analytics | Complete | 4.1 ✅, 4.2 ✅, 4.3 ✅, 4.4 ✅, 4.5 ✅ |
 | Phase 5: Hardening & Tester Feedback v1 | Complete | 5.1 ✅, 5.2a ✅, 5.2b ✅, 5.2c ✅, 5.2d ✅, 5.2e ✅ |
 | Phase 6: Tester Feedback v2 | Complete | 6a ✅, 6b ✅, 6c ✅ |
-| Phase 7: Tester Feedback v3 | In Progress | 7a ✅, 7b ✅, 7c ✅, 7d field additions, 7e reset button |
+| Phase 7: Tester Feedback v3 | In Progress | 7a ✅, 7b ✅, 7c ✅, 7d ✅, 7e reset button |
 | Phase 11: Production Deployment | Not Started | Vercel setup |
 | Phase 12: Data Migration | Not Started | Caspio export + import script |

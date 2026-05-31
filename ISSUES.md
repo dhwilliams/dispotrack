@@ -122,3 +122,15 @@
 ### Issue: Selector ambiguity — "Manufacturers" appears as both TabsTrigger and CardTitle
 - `getByText("Manufacturers", { exact: true })` matched two elements on the admin page once the tab was active: the TabsTrigger button and the CardTitle inside the panel.
 - **Fix**: Replaced the heading-style assertion with row-cell assertions (`getByRole("cell", { name: "Dell", exact: true })`) that uniquely target table content. Same pattern as the 7a fix — shadcn primitives don't expose `role="heading"` so prefer content-level selectors.
+
+## Phase 7d
+
+### Issue (test-side only): laptop field-def row count vs sort_order confusion
+- Unit test initially asserted laptop would have 17 field definitions after 7d (confused with `sort_order = 17` for the new field).
+- Real count is 12: hardware fields use sort_orders 1–4, type_specific fields use sort_orders 10–17 with gaps.
+- **Fix**: corrected the assertion to 12. No production-source change required.
+
+### Issue (spec gap): `network.description` not in original seed
+- Prompt assumed `description` was seeded for both `other` and `network` ("Pull the field definition from asset_type_field_definitions where field_name='description' for that type (already seeded)").
+- DB check showed only `other.description` was seeded in migration 00003 — `network` was never given a description field.
+- **Fix**: added `network.description` as a third INSERT in migration `00010_field_additions.sql` so the "render description at intake for other AND network" contract has a matching field_definition for both types. Edit form's Type-Specific tab now also renders description for network assets.

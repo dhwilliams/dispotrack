@@ -71,6 +71,10 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
   const [quantity, setQuantity] = useState("1")
   const [weight, setWeight] = useState("")
   const [notes, setNotes] = useState("")
+  // `description` is a type-specific field surfaced at intake only for
+  // asset_type `other` and `network` (per Amber). It rides through to
+  // asset_type_details.details.description on the create.
+  const [description, setDescription] = useState("")
   const [error, setError] = useState("")
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [lastCreated, setLastCreated] = useState<CreatedAsset | null>(null)
@@ -85,6 +89,7 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
     setAssetTag("")
     setWeight("")
     setNotes("")
+    setDescription("")
     setError("")
     setFieldErrors({})
     setDuplicateWarning(null)
@@ -105,6 +110,7 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
     setQuantity("1")
     setWeight("")
     setNotes("")
+    setDescription("")
     setError("")
     setFieldErrors({})
     setDuplicateWarning(null)
@@ -172,6 +178,11 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
     formData.set("quantity", quantity)
     formData.set("weight", weight)
     formData.set("notes", notes)
+    // Description rides through only for types that surface it at intake.
+    // The route handler is the source of truth — it picks up whatever it sees.
+    if (description && (assetType === "other" || assetType === "network")) {
+      formData.set("description", description)
+    }
 
     setIsPending(true)
     try {
@@ -400,6 +411,24 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
               />
             </div>
           </div>
+
+          {/* Description (Other + Network only — surfaced at intake per Amber) */}
+          {(assetType === "other" || assetType === "network") && (
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                placeholder={
+                  assetType === "other"
+                    ? "What is this asset? (e.g. badge printer, UPS, card scanner...)"
+                    : "Network equipment detail (e.g. 24-port managed switch, wireless AP...)"
+                }
+                rows={2}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+          )}
 
           {/* Notes */}
           <div className="space-y-2">
