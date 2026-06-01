@@ -143,21 +143,22 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
     }, 100)
   }
 
-  // Full reset (Phase 7e "Reset Form" button) — wipes EVERYTHING including
-  // the transaction picker and tracking mode. Differs from `clearAllFields`
-  // (used by the post-submit "Clear All" ghost button) which preserves the
-  // transaction context for batch entry.
+  // Full reset (Phase 7e "Reset Form" button). Phase 7f: the transaction
+  // picker is now PRESERVED so Amber can wipe everything else and keep
+  // batching against the same transaction. tracking_mode still resets to
+  // 'serialized'.
   function resetEntireForm() {
-    setTransactionId("")
     setTrackingMode("serialized")
     clearAllFields()
   }
 
   // Anything other than the page-load defaults counts as "dirty" — guards the
   // confirm dialog so a fully-empty form resets silently with no nag.
+  // Phase 7f: transactionId is intentionally excluded — a preselected
+  // transaction shouldn't trigger the confirm on its own, since reset now
+  // keeps the transaction.
   function isFormDirty(): boolean {
     return (
-      transactionId !== "" ||
       trackingMode !== "serialized" ||
       serialNumber !== "" ||
       assetType !== "" ||
@@ -577,8 +578,9 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Clear all fields?</AlertDialogTitle>
             <AlertDialogDescription>
-              This wipes the transaction, asset type, manufacturer, model, and
-              all other fields. Assets already saved are unaffected.
+              This wipes asset type, manufacturer, model, and all other fields.
+              The selected transaction is kept so you can continue batching.
+              Assets already saved are unaffected.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

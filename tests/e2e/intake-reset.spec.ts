@@ -48,6 +48,25 @@ test.describe("Phase 7e — Quick-Add Reset Form Button", () => {
     await expect(page.getByRole("alertdialog")).toHaveCount(0);
   });
 
+  /* -------- Phase 7f: preselected txn alone is NOT dirty -------- */
+
+  test("Phase 7f: Preselected transaction alone does NOT trigger the AlertDialog", async ({
+    page,
+  }) => {
+    const { id: txnId } = await createTestTransaction({
+      transactionNumber: `${TXN_PREFIX}TXNONLY.00001`,
+    });
+
+    await page.goto(`/assets/intake?transaction=${txnId}`);
+
+    await page.getByRole("button", { name: /^reset form$/i }).click();
+
+    // With 7f, transactionId is excluded from isFormDirty, so an otherwise
+    // empty form with only a preselected transaction resets silently.
+    await page.waitForTimeout(500);
+    await expect(page.getByRole("alertdialog")).toHaveCount(0);
+  });
+
   /* ----------------------- Dirty form → AlertDialog --------------------- */
 
   test("Dirty form: clicking Reset Form opens an AlertDialog with the expected title", async ({
@@ -59,7 +78,9 @@ test.describe("Phase 7e — Quick-Add Reset Form Button", () => {
 
     await page.goto(`/assets/intake?transaction=${txnId}`);
 
-    // Confirm transaction is preselected (transactionId state = txnId → dirty)
+    // Make the form dirty with a real user-entered value (not just txn)
+    await page.getByLabel(/MFG Model Number/i).fill("E2E7E-DirtyModel");
+
     await page
       .getByRole("button", { name: /^reset form$/i })
       .click();
@@ -67,8 +88,14 @@ test.describe("Phase 7e — Quick-Add Reset Form Button", () => {
     const dialog = page.getByRole("alertdialog");
     await expect(dialog).toBeVisible({ timeout: 5000 });
     await expect(dialog.getByText(/clear all fields/i)).toBeVisible();
-    // Description mentions saved assets are safe
-    await expect(dialog.getByText(/assets already saved are unaffected/i)).toBeVisible();
+    // Phase 7f: dialog body now mentions the transaction is kept
+    await expect(
+      dialog.getByText(/selected transaction is kept/i),
+    ).toBeVisible();
+    // Description still mentions saved assets are safe
+    await expect(
+      dialog.getByText(/assets already saved are unaffected/i),
+    ).toBeVisible();
   });
 
   test("Cancel from the AlertDialog preserves the typed values", async ({
@@ -106,11 +133,12 @@ test.describe("Phase 7e — Quick-Add Reset Form Button", () => {
     await expect(page.locator("button#manufacturer")).toContainText("Lenovo");
   });
 
-  test("Confirm wipes transaction + asset_type + manufacturer + model", async ({
+  test("Phase 7f: Confirm wipes asset fields but PRESERVES the transaction", async ({
     page,
   }) => {
+    const txnNum = `${TXN_PREFIX}CONFIRM.00001`;
     const { id: txnId } = await createTestTransaction({
-      transactionNumber: `${TXN_PREFIX}CONFIRM.00001`,
+      transactionNumber: txnNum,
     });
 
     await page.goto(`/assets/intake?transaction=${txnId}`);
@@ -130,17 +158,35 @@ test.describe("Phase 7e — Quick-Add Reset Form Button", () => {
     await dialog.getByRole("button", { name: /^clear form$/i }).click();
     await expect(dialog).toHaveCount(0);
 
-    // Add Asset button should now be disabled (no transaction selected)
+    // Phase 7f: transaction is PRESERVED → Add Asset stays enabled
     await expect(
       page.getByRole("button", { name: /^add asset$/i }),
-    ).toBeDisabled();
+    ).toBeEnabled();
 
-    // Form cleared — Model input shows empty value
+    // Asset fields are wiped — Model input shows empty value
     await expect(page.getByLabel(/MFG Model Number/i)).toHaveValue("");
     // Manufacturer combobox returned to its placeholder text
     await expect(page.locator("button#manufacturer")).toContainText(
       /select or type manufacturer/i,
     );
+
+    // Sanity: filling Serial + clicking Add Asset writes to the SAME txn.
+    // This proves the preserved transactionId is still wired through.
+    // BarcodeScanner wrapper exposes id="serial_number" on the underlying
+    // Input — see ISSUES note from Phase 7g.
+    await page.locator("input#serial_number").fill(`E2E7FAFTER${Date.now()}`);
+    await page.getByLabel(/asset type/i).click();
+    await page.getByRole("option", { name: /^Desktop$/i }).click();
+    await page.getByRole("button", { name: /^add asset$/i }).click();
+    await expect(page.getByText(/^Assets Added \(1\)/i)).toBeVisible({
+      timeout: 15_000,
+    });
+
+    const { data: assets } = await adminDb()
+      .from("assets")
+      .select("id, transaction_id")
+      .eq("transaction_id", txnId);
+    expect(assets).toHaveLength(1);
   });
 
   /* ---------------- Post-submit partial clear still works ---------------- */
