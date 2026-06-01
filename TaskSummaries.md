@@ -706,3 +706,18 @@ Error handling hardened:
 1. Does she ever legitimately need an "I know — save anyway" override checkbox?
 2. Tighten the on-blur amber warning wording to reflect the hard-block?
 
+
+## Phase 7h — Inventory & Asset List: Transaction Search + Column Additions
+
+**What was done:**
+- Inventory page (`app/(app)/inventory/page.tsx`): added a "Transaction #..." search input next to the existing free-text search. Pre-resolves matching transactions → asset_ids → filters `inventory.asset_id`. Returns 0 rows when no transactions match. New columns: Asset Type, Serial # (sourced from the linked asset; `serial_number` added to the embedded select). Dropped Part # column from the table — DB column + data preserved (still passed to `<InventoryActions>` for split/adjust dialogs). Filter form grid widened from 4 → 5 columns.
+- Asset list page (`app/(app)/assets/page.tsx`): existing `q` search extended to also match `transactions.transaction_number` via pre-resolve + `transaction_id.in.(...)` in the `.or()` clause. New Description column between Model and Serial #, sourced from `asset_type_details.details.description`. Embedded select extended to include `asset_type_details(details)`.
+- AssetRow interface (`components/tables/asset-table.tsx`) gained `description: string | null`. Description column uses `max-w-[12rem] truncate` + `title` attribute for full text on hover. Column count bumped 12 → 13.
+- Tests: 7 playwright e2e (3 inventory + 4 asset list) — 7/7 passing on first run. Cumulative 74/74 (32 vitest + 42 playwright).
+
+**Notable decisions:**
+- Pre-resolve approach (txn → asset_ids → filter) was used in both places. Same pattern the inventory page already used for free-text search through linked assets. Has a 500-row cap on the matching transactions lookup — likely fine for the real Caspio dataset but worth noting if a query like `q=2026` ever spans thousands of txns.
+- Part # column dropped from the table only — the DB column and the data are preserved (the split/adjust dialog UI still uses it). Easy to add back to the table if Amber changes her mind.
+- Description column truncates with `max-w-[12rem]` to keep the row compact. Full text on hover via the `title` attribute (no Tooltip component needed). If line-wrap is preferred later, change `truncate` to `whitespace-normal`.
+- Description on asset list pulls from `asset_type_details.details.description` specifically (the JSONB field set by Phase 7d intake for other/network types). Other JSONB descriptors in `details` like `printer_type` aren't surfaced here — the Available report (6b) has dedicated columns for those.
+

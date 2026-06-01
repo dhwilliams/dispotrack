@@ -618,15 +618,19 @@
 - [x] **Open questions still flagged for Amber** (not blocking): (1) does she ever legitimately need an "I know — save anyway" override checkbox? (2) The on-blur amber warning still says "You can still save if this is intentional" — tighten to reflect the new hard block?
 - [x] Tests: 5 playwright e2e — 5/5 passing (no vitest needed — auth-tied check covered cleanly by e2e)
 
-### 7h — Inventory & Asset List: Transaction Search + Column Additions
-- [ ] Inventory page (`app/(app)/inventory/page.tsx`):
-  - [ ] Add transaction-number search field (joins through `inventory.asset_id` → `assets.transaction_id` → `transactions.transaction_number`)
-  - [ ] Add columns: `asset_type`, `serial_number` (from the linked asset)
-  - [ ] **Optional removal**: drop `part_number` column to make room (Amber's wording: "you can remove the part number if needed")
-- [ ] Asset list page (`app/(app)/assets/page.tsx`):
-  - [ ] Extend search to also match `transactions.transaction_number` (via the existing inner join)
-  - [ ] Add `description` column (from `asset_type_details.details->>'description'`)
-- [ ] Tests: e2e for both search-by-transaction features + column visibility
+### 7h — Inventory & Asset List: Transaction Search + Column Additions ✅
+- [x] Inventory page (`app/(app)/inventory/page.tsx`):
+  - [x] Added transaction-number search field (pre-resolves txn → assets → inventory.asset_id; returns 0 rows when no txns match)
+  - [x] Added columns: `asset_type`, `serial_number` (from the linked asset — `serial_number` added to the embedded select)
+  - [x] Dropped `part_number` column from the table per Amber's "if needed" offer. DB column + data preserved; still passed to `<InventoryActions>` for split/adjust dialogs.
+  - [x] Filter form grid widened from 4 to 5 columns to fit the new input
+- [x] Asset list page (`app/(app)/assets/page.tsx`):
+  - [x] Extended `q` search to also match `transactions.transaction_number` via pre-resolve + `transaction_id.in.(...)` in `.or()`
+  - [x] Added `description` column (between Model and Serial #) from `asset_type_details.details->>'description'`
+  - [x] AssetRow interface (`components/tables/asset-table.tsx`) gained `description: string | null`
+  - [x] Description column truncated with `max-w-[12rem] truncate` + full text on hover via `title` attribute
+  - [x] Column count bumped 12 → 13
+- [x] Tests: 7 playwright e2e (3 inventory + 4 asset list) — 7/7 passing on first run
 
 ### 7i — Description Column on Operational Reports
 - [ ] `app/(app)/reports/received/page.tsx` + `components/reports/received-report.tsx`: add Description column (table + CSV)
@@ -741,6 +745,6 @@
 | Phase 5: Hardening & Tester Feedback v1 | Complete | 5.1 ✅, 5.2a ✅, 5.2b ✅, 5.2c ✅, 5.2d ✅, 5.2e ✅ |
 | Phase 6: Tester Feedback v2 | Complete | 6a ✅, 6b ✅, 6c ✅ |
 | Phase 7: Tester Feedback v3 | Complete | 7a ✅, 7b ✅, 7c ✅, 7d ✅, 7e ✅ |
-| Phase 7+: Tester Feedback v4 | In Progress | 7g ✅, 7f reset-keeps-txn, 7h list searches/cols, 7i description on reports, 7j bulk shipment, 7k hard_drive type, 7l drive saves w/o sanitization |
+| Phase 7+: Tester Feedback v4 | In Progress | 7g ✅, 7h ✅, 7f reset-keeps-txn, 7i description on reports, 7j bulk shipment, 7k hard_drive type, 7l drive saves w/o sanitization |
 | Phase 11: Production Deployment | Not Started | Vercel setup |
 | Phase 12: Data Migration | Not Started | Caspio export + import script |

@@ -77,11 +77,12 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
   const sortColumn = sort && VALID_SORT_COLUMNS.has(sort) ? SORT_COLUMN_MAP[sort] : "created_at"
   const ascending = order === "asc"
 
-  // Build query
+  // Build query — also pull description from asset_type_details so we can
+  // surface it as a column (Phase 7h).
   let query = supabase
     .from("assets")
     .select(
-      "*, transactions!inner(transaction_number, transaction_date, client_id, clients!inner(name, cost_center))",
+      "*, transactions!inner(transaction_number, transaction_date, client_id, clients!inner(name, cost_center)), asset_type_details(details)",
       { count: "exact" },
     )
     .order(sortColumn, { ascending })
@@ -89,9 +90,24 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
   // Apply filters
   if (q) {
     const p = likePattern(q)
-    query = query.or(
-      `internal_asset_id.ilike.${p},serial_number.ilike.${p},model.ilike.${p},asset_tag.ilike.${p}`,
-    )
+    // Pre-resolve transaction-number matches so the user can search by
+    // transaction number on the assets list (Phase 7h).
+    const { data: matchingTxns } = await supabase
+      .from("transactions")
+      .select("id")
+      .ilike("transaction_number", p)
+      .limit(500)
+    const txnIds = (matchingTxns ?? []).map((t) => t.id)
+    const orClauses = [
+      `internal_asset_id.ilike.${p}`,
+      `serial_number.ilike.${p}`,
+      `model.ilike.${p}`,
+      `asset_tag.ilike.${p}`,
+    ]
+    if (txnIds.length > 0) {
+      orClauses.push(`transaction_id.in.(${txnIds.join(",")})`)
+    }
+    query = query.or(orClauses.join(","))
   }
   if (asset_type) query = query.eq("asset_type", asset_type as "desktop" | "server" | "laptop" | "tablet" | "monitor" | "printer" | "phone" | "tv" | "network" | "other")
   if (status) query = query.eq("status", status as "received" | "in_process" | "tested" | "graded" | "sanitized" | "available" | "sold" | "recycled" | "on_hold")
@@ -119,6 +135,11 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
       client_id: string
       clients: { name: string; cost_center: string | null }
     }
+    const typeDetails = asset.asset_type_details as unknown as
+      | { details: Record<string, unknown> }
+      | null
+    const description =
+      (typeDetails?.details?.description as string | undefined) ?? null
     return {
       id: asset.id,
       internal_asset_id: asset.internal_asset_id,
@@ -134,6 +155,7 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
       available_for_sale: asset.available_for_sale,
       bin_location: asset.bin_location,
       notes: asset.notes,
+      description,
       transaction_number: txn.transaction_number,
       transaction_date: txn.transaction_date,
       customer_name: txn.clients.name,

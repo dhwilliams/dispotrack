@@ -35,6 +35,8 @@ interface AssetRow {
   available_for_sale: boolean
   bin_location: string | null
   notes: string | null
+  /** From asset_type_details.details.description — Phase 7h column */
+  description: string | null
   transaction_number: string
   transaction_date: string
   customer_name: string
@@ -195,7 +197,7 @@ export function AssetTable({
   )
 
   // ---- Column count for empty state ----
-  const columnCount = 12
+  const columnCount = 13
 
   return (
     <Table>
@@ -270,6 +272,9 @@ export function AssetTable({
 
           {/* Model */}
           <TableHead>Model</TableHead>
+
+          {/* Description (Phase 7h — from asset_type_details.details.description) */}
+          <TableHead>Description</TableHead>
 
           {/* Serial # */}
           <TableHead>Serial #</TableHead>
@@ -367,6 +372,14 @@ export function AssetTable({
                 {/* Model */}
                 <TableCell className="text-muted-foreground">
                   {asset.model ?? ""}
+                </TableCell>
+
+                {/* Description — truncate to keep the row compact, full text on hover */}
+                <TableCell
+                  className="max-w-[12rem] truncate text-sm text-muted-foreground"
+                  title={asset.description ?? undefined}
+                >
+                  {asset.description ?? ""}
                 </TableCell>
 
                 {/* Serial # */}

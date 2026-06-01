@@ -22,6 +22,7 @@ import { InventoryActions } from "./inventory-actions"
 interface InventoryPageProps {
   searchParams: Promise<{
     q?: string
+    txn?: string
     status?: string
     location?: string
     page?: string
@@ -50,7 +51,7 @@ function formatStatus(status: string): string {
 
 export default async function InventoryPage({ searchParams }: InventoryPageProps) {
   const params = await searchParams
-  const { q, status, location } = params
+  const { q, txn, status, location } = params
 
   const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1)
   const perPage = [25, 50, 100].includes(parseInt(params.per_page ?? "25", 10))
@@ -59,11 +60,11 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
 
   const supabase = await createClient()
 
-  // Build query — join assets for linked asset info
+  // Build query — join assets (including serial_number for the new column)
   let query = supabase
     .from("inventory")
     .select(
-      "*, assets(id, internal_asset_id, asset_type, manufacturer, model)",
+      "*, assets(id, internal_asset_id, asset_type, serial_number, manufacturer, model)",
       { count: "exact" },
     )
     .order("updated_at", { ascending: false })
@@ -85,12 +86,41 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
 
     if (matchIds.length > 0) {
       query = query.or(
-        `location.ilike.${p},part_number.ilike.${p},description.ilike.${p},asset_id.in.(${matchIds.join(",")})`,
+        `location.ilike.${p},description.ilike.${p},asset_id.in.(${matchIds.join(",")})`,
       )
     } else {
       query = query.or(
-        `location.ilike.${p},part_number.ilike.${p},description.ilike.${p}`,
+        `location.ilike.${p},description.ilike.${p}`,
       )
+    }
+  }
+
+  // Transaction-number filter (Phase 7h): pre-resolve matching transactions
+  // -> their asset ids -> filter inventory.asset_id. If no transactions match
+  // a non-empty txn input, no inventory rows should be returned.
+  if (txn) {
+    const p = likePattern(txn)
+    const { data: matchingTxns } = await supabase
+      .from("transactions")
+      .select("id")
+      .ilike("transaction_number", p)
+      .limit(500)
+    const txnIds = (matchingTxns ?? []).map((t) => t.id)
+    if (txnIds.length === 0) {
+      // No matching transactions — force an empty result set
+      query = query.eq("id", "00000000-0000-0000-0000-000000000000")
+    } else {
+      const { data: txnAssets } = await supabase
+        .from("assets")
+        .select("id")
+        .in("transaction_id", txnIds)
+        .limit(5000)
+      const assetIds = (txnAssets ?? []).map((a) => a.id)
+      if (assetIds.length === 0) {
+        query = query.eq("id", "00000000-0000-0000-0000-000000000000")
+      } else {
+        query = query.in("asset_id", assetIds)
+      }
     }
   }
   if (status) {
@@ -120,6 +150,7 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
         id: string
         internal_asset_id: string
         asset_type: string
+        serial_number: string | null
         manufacturer: string | null
         model: string | null
       } | null
@@ -155,12 +186,19 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
       </PageHeader>
 
       {/* Filters */}
-      <form method="GET" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <form method="GET" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <input
           type="text"
           name="q"
-          placeholder="Search location, part, description..."
+          placeholder="Search location, description, asset..."
           defaultValue={q ?? ""}
+          className="h-9 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground"
+        />
+        <input
+          type="text"
+          name="txn"
+          placeholder="Transaction #..."
+          defaultValue={txn ?? ""}
           className="h-9 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground"
         />
         <select
@@ -209,8 +247,9 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
             <TableRow>
               <TableHead>Location</TableHead>
               <TableHead>Description</TableHead>
-              <TableHead>Part #</TableHead>
               <TableHead>Linked Asset</TableHead>
+              <TableHead>Asset Type</TableHead>
+              <TableHead>Serial #</TableHead>
               <TableHead className="text-right">Qty</TableHead>
               <TableHead>UoM</TableHead>
               <TableHead>Status</TableHead>
@@ -221,7 +260,7 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
             {rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={9}
                   className="h-32 text-center text-muted-foreground"
                 >
                   No inventory records found. Assets are added to inventory during intake.
@@ -236,9 +275,6 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
                   <TableCell>
                     {row.description ?? "—"}
                   </TableCell>
-                  <TableCell className="font-mono text-sm text-muted-foreground">
-                    {row.part_number ?? "—"}
-                  </TableCell>
                   <TableCell>
                     {row.assets ? (
                       <Link
@@ -250,6 +286,12 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
+                  </TableCell>
+                  <TableCell className="text-sm capitalize">
+                    {row.assets?.asset_type ?? <span className="text-muted-foreground">—</span>}
+                  </TableCell>
+                  <TableCell className="font-mono text-sm text-muted-foreground">
+                    {row.assets?.serial_number ?? "—"}
                   </TableCell>
                   <TableCell className="text-right tabular-nums font-medium">
                     {row.quantity_on_hand}
