@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useCallback } from "react"
+import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -90,6 +91,14 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
   const [lastCreated, setLastCreated] = useState<CreatedAsset | null>(null)
   const [createdAssets, setCreatedAssets] = useState<CreatedAsset[]>([])
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null)
+  // Phase 7g — hard-block 409 from the intake route. Populated when the
+  // server says the serial already exists; cleared when the user changes
+  // the serial or hits Reset Form.
+  const [duplicateError, setDuplicateError] = useState<{
+    serial: string
+    existingAssetId: string
+    existingInternalId: string
+  } | null>(null)
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false)
 
   const serialRef = useRef<HTMLDivElement>(null)
@@ -104,6 +113,7 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
     setError("")
     setFieldErrors({})
     setDuplicateWarning(null)
+    setDuplicateError(null)
     setLastCreated(null)
     // Focus the serial number input for quick-add
     setTimeout(() => {
@@ -125,6 +135,7 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
     setError("")
     setFieldErrors({})
     setDuplicateWarning(null)
+    setDuplicateError(null)
     setLastCreated(null)
     setTimeout(() => {
       const input = serialRef.current?.querySelector("input")
@@ -232,6 +243,17 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
       const result = await response.json()
 
       if (!result.success) {
+        // Hard-block path: duplicate serial returns 409 with structured
+        // info so we can render a banner + link to the existing asset.
+        if (response.status === 409 && result.duplicateSerial) {
+          setDuplicateError({
+            serial: cleanedSerial,
+            existingAssetId: result.existingAssetId,
+            existingInternalId: result.existingInternalId,
+          })
+          toast.error(`Duplicate serial: ${result.existingInternalId}`)
+          return
+        }
         setError(result.error)
         if (result.fieldErrors) setFieldErrors(result.fieldErrors)
         toast.error(result.error || "Failed to create asset")
@@ -359,13 +381,39 @@ export function IntakeForm({ initialTransactionId }: IntakeFormProps) {
                 onChange={(val) => {
                   setSerialNumber(val)
                   if (duplicateWarning) setDuplicateWarning(null)
+                  if (duplicateError) setDuplicateError(null)
                 }}
                 onBlur={handleSerialBlur}
               />
-              {duplicateWarning && (
+              {duplicateWarning && !duplicateError && (
                 <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
                   <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   <span>{duplicateWarning}</span>
+                </div>
+              )}
+              {duplicateError && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-2 rounded-md border border-destructive bg-destructive/10 px-3 py-2 text-xs text-destructive"
+                >
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <div className="space-y-1">
+                    <p className="font-medium">
+                      Serial &ldquo;{duplicateError.serial}&rdquo; already exists.
+                    </p>
+                    <p>
+                      Cannot save — already on asset{" "}
+                      <Link
+                        href={`/assets/${duplicateError.existingAssetId}`}
+                        className="underline underline-offset-2 font-medium"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {duplicateError.existingInternalId}
+                      </Link>
+                      . Change the serial number to save a new asset.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>

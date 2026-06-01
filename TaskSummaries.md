@@ -686,3 +686,23 @@ Error handling hardened:
 - Description state survives type switches in memory (avoids loss on a fat-fingered type change). Dirty check sees it regardless of current type render.
 - `initialTransactionId` URL param is NOT auto-restored after reset — the user clicked Reset Form, they get a clean slate even if they came in via deep-link.
 
+
+## Phase 7g — Hard-Block Duplicate Serial Saves
+
+**What was done:**
+- Reverses Phase 5.2b decision (soft warning, allow override) per Amber's feedback that the warning fired but the asset still saved.
+- `app/api/assets/intake/route.ts`: pre-INSERT duplicate-serial check. Returns 409 with `{ error, existingAssetId (UUID), existingInternalId (LR3-...), duplicateSerial: true }` when a serial already exists on another asset. Empty/null serials bypass the check.
+- `components/forms/intake-form.tsx`: new `duplicateError` state; red `role="alert"` banner under the serial input with the existing asset's internal_asset_id linked to its detail page (opens in new tab). Form does NOT clear on the duplicate path. Auto-suppress the on-blur amber warning when the red error is showing — no double-banner.
+- Banner clears on: serial-edit, Reset Form confirm, Clear All ghost button, quick-add post-submit reset.
+- Tests: 5 playwright e2e — 5/5 passing. Cumulative 67/67 (32 vitest + 35 playwright).
+
+**Notable decisions:**
+- e2e only (no vitest). The check is auth-tied to the route handler; spinning up a service-role mock equivalent for unit tests would cost more than it pays back. The e2e covers the full path including DB writes.
+- Returned BOTH the asset UUID (for the URL link) and the internal_asset_id (for display) from the 409. The form needs the UUID to build `/assets/<uuid>` but the user wants to see `LR3-XXXXXX`.
+- Auto-suppress the amber on-blur warning when the red banner is showing via `&& !duplicateError` guard — avoids confusing dual-warning state. The amber warning's "you can still save if intentional" wording is now stale but left alone (flagged as an open question for Amber — UX-tone change, low priority).
+- No DB-level UNIQUE index added. Application-level check only. Would foreclose the future override-checkbox option, so deferred.
+
+**Open questions flagged for Amber (not blocking):**
+1. Does she ever legitimately need an "I know — save anyway" override checkbox?
+2. Tighten the on-blur amber warning wording to reflect the hard-block?
+

@@ -609,13 +609,14 @@
 - [ ] Update AlertDialog body text — note that transaction is kept
 - [ ] Update existing e2e (`tests/e2e/intake-reset.spec.ts`) to assert transaction PERSISTS after reset
 
-### 7g — Hard-Block Duplicate Serial Saves
-- [ ] Reverse the Phase 5.2b "soft warning allow override" decision per Amber's feedback
-- [ ] Update `app/api/assets/intake/route.ts`: before insert, check if `serial_number` already exists (when non-empty). Return 409 with structured error including the existing asset's `internal_asset_id`.
-- [ ] Update intake form to surface the 409 as a hard error (toast or banner) and NOT clear the form
-- [ ] Keep the on-blur soft warning (early feedback) — it still helps but no longer "the last word"
-- [ ] **Open question for Amber**: do we ever legitimately have two assets with the same serial number (e.g., re-received returns, typos)? If yes, add an "I know — save anyway" checkbox. If no (default), hard-block only.
-- [ ] Tests: vitest for the route handler returning 409 on duplicate; e2e for the intake form showing the error AND DB shows only one asset (no duplicate row)
+### 7g — Hard-Block Duplicate Serial Saves ✅
+- [x] Reverse the Phase 5.2b "soft warning allow override" decision per Amber's feedback
+- [x] Update `app/api/assets/intake/route.ts`: before insert, check if `serial_number` already exists (when non-empty). Returns 409 with `{ error, existingAssetId (UUID), existingInternalId (LR3-…), duplicateSerial: true }`.
+- [x] Update intake form to surface the 409 as a red banner under the serial field with a link to the existing asset's detail page. Form does NOT clear — user can edit serial and retry.
+- [x] Keep the on-blur soft warning (early feedback). New behavior: amber warning auto-suppressed when red error banner is showing (no double-banner).
+- [x] Banner auto-clears when the user edits the serial number, or via Reset Form / Clear All / quick-add reset.
+- [x] **Open questions still flagged for Amber** (not blocking): (1) does she ever legitimately need an "I know — save anyway" override checkbox? (2) The on-blur amber warning still says "You can still save if this is intentional" — tighten to reflect the new hard block?
+- [x] Tests: 5 playwright e2e — 5/5 passing (no vitest needed — auth-tied check covered cleanly by e2e)
 
 ### 7h — Inventory & Asset List: Transaction Search + Column Additions
 - [ ] Inventory page (`app/(app)/inventory/page.tsx`):
@@ -740,6 +741,6 @@
 | Phase 5: Hardening & Tester Feedback v1 | Complete | 5.1 ✅, 5.2a ✅, 5.2b ✅, 5.2c ✅, 5.2d ✅, 5.2e ✅ |
 | Phase 6: Tester Feedback v2 | Complete | 6a ✅, 6b ✅, 6c ✅ |
 | Phase 7: Tester Feedback v3 | Complete | 7a ✅, 7b ✅, 7c ✅, 7d ✅, 7e ✅ |
-| Phase 7+: Tester Feedback v4 | Not Started | 7f reset-keeps-txn, 7g hard-block-dupe, 7h list searches/cols, 7i description on reports, 7j bulk shipment, 7k hard_drive type, 7l drive saves w/o sanitization |
+| Phase 7+: Tester Feedback v4 | In Progress | 7g ✅, 7f reset-keeps-txn, 7h list searches/cols, 7i description on reports, 7j bulk shipment, 7k hard_drive type, 7l drive saves w/o sanitization |
 | Phase 11: Production Deployment | Not Started | Vercel setup |
 | Phase 12: Data Migration | Not Started | Caspio export + import script |

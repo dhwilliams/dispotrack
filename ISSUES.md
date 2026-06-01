@@ -146,3 +146,17 @@
 - Re-running the test in isolation and as part of a fresh full suite — both passed.
 - Likely cause: brief race in the demote-then-promote `setPrimaryLocationAction` window when the DB hadn't yet propagated the new state to the subsequent SELECT.
 - **Mitigation if it recurs**: wrap the assertion in `expect.poll()`. Not fixed proactively because it's only happened once and the test passes consistently otherwise.
+
+## Phase 7g
+
+### Issue (test-side only): serial input selector brittleness
+- Initial e2e used `label:has-text("Serial Number") + * input` adjacency selectors. The `BarcodeScanner` wrapper component made this fragile.
+- **Fix**: switched to `input#serial_number`. The wrapper forwards the `id` prop to its underlying `<Input>`, so the direct id selector is stable.
+
+### Issue (test-side only): `role="alert"` matched both banner and toast
+- Sonner toasts render with `role="alert"`. A bare `getByRole("alert")` matched both the form banner AND the active toast, causing unexpected count assertions.
+- **Fix**: scoped the banner assertion via `.filter({ hasText: /already exists/i })`. Toast text reads `"Duplicate serial: LR3-..."` so the scope is unambiguous.
+
+### Issue (test-side only): dash-stripping bit the unique-serial test
+- Generated a test serial as `${prefix}-X-${timestamp}` then asserted equality against the saved DB value. The intake form strips `[-\s]` before submit, so the saved value lacked the dashes.
+- **Fix**: introduced a `dashlessSerial(tag)` helper at the top of the spec for non-dash tests. The dedicated dash-equivalence test still uses a dashed input intentionally.
