@@ -780,6 +780,195 @@ Do not commit until I review. No co-authoring on commits.
 
 ---
 
+### Phase 7+ Tester Feedback (Amber v4 — 6/01/2026)
+
+> Second round of Phase 7 feedback. Same workflow as 7a–7e: write the verifysteps doc at the end of each step, ask manual-vs-automate, write the testresults doc if automating (per the CLAUDE.md workflow rule).
+
+**7f — Reset Form Preserves Transaction**
+```
+@TODO.md @CLAUDE.md @.agents/ui-builder.md
+
+Mark the previous step as complete. Proceed with Phase 7f — Reset Form Preserves Transaction and ONLY that step.
+
+Use ui-builder for the intake form change. Use TaskCreate to track sub-tasks.
+
+Key design (decided with Amber):
+- Reset Form button (from 7e) should keep the transaction number selected
+- Everything else still wipes (asset_type, manufacturer, model, model_name, mfg_part_number, asset_tag, qty, weight, notes, serial_number, description, tracking_mode -> 'serialized')
+- isFormDirty() must exclude transactionId — otherwise a preselected transaction always triggers the AlertDialog
+- AlertDialog body text should mention the transaction is preserved
+
+Single-file change: `components/forms/intake-form.tsx`. Existing e2e at `tests/e2e/intake-reset.spec.ts` needs updates to assert the new behavior.
+
+Any issues or questions — ask me. When complete, write drafts/7f-verifysteps.md then ask whether to verify manually or automate. Tell me what the next step is.
+
+Do not commit until I review. No co-authoring on commits.
+```
+
+**7g — Hard-Block Duplicate Serial Saves**
+```
+@TODO.md @CLAUDE.md @.agents/api-architect.md @.agents/ui-builder.md
+
+Mark the previous step as complete. Proceed with Phase 7g — Hard-Block Duplicate Serial Saves and ONLY that step.
+
+Use api-architect for the route handler hardening, ui-builder for the error surfacing. Use TaskCreate to track sub-tasks.
+
+Key design (decided with Amber):
+- This REVERSES the Phase 5.2b "soft warning, allow override" decision per Amber's feedback
+- Update `app/api/assets/intake/route.ts`: before insert, check `assets.serial_number` against the incoming value. If non-empty AND matches an existing row, return 409 with { error, existingAssetId: '<internal_asset_id>' }
+- Intake form (`components/forms/intake-form.tsx`): surface the 409 as a hard error (red banner with the existing asset's internal_asset_id, link to view it). Do NOT clear the form.
+- Keep the on-blur soft warning as an early hint — it still helps but no longer "the last word"
+
+Open question to flag at implementation time (before writing tests):
+- Do we ever LEGITIMATELY have two assets with the same serial number (e.g., re-received returns, typos)? Default to hard-block always. If the user wants an "I know — save anyway" override checkbox after seeing the design, we can add it.
+
+Any issues or questions — ask me. When complete, write drafts/7g-verifysteps.md then ask whether to verify manually or automate. Tell me what the next step is.
+
+Do not commit until I review. No co-authoring on commits.
+```
+
+**7h — Inventory & Asset List: Transaction Search + Column Additions**
+```
+@TODO.md @CLAUDE.md @.agents/api-architect.md @.agents/ui-builder.md
+
+Mark the previous step as complete. Proceed with Phase 7h — Inventory & Asset List Updates and ONLY that step.
+
+Use api-architect for query expansions (transaction-number join + description extraction from asset_type_details.details), ui-builder for new columns + search field. Use TaskCreate to track sub-tasks.
+
+Two list pages to update, same pattern (transaction-number search + new columns):
+
+1. Inventory page (`app/(app)/inventory/page.tsx`):
+   - Add transaction-number search input (joins through inventory.asset_id -> assets.transaction_id -> transactions.transaction_number)
+   - Add columns: asset_type, serial_number (from the linked asset)
+   - Optional: drop the part_number column to make room (per Amber: "you can remove the part number if needed"). Recommended to drop unless there's a clear reason to keep it.
+
+2. Asset list page (`app/(app)/assets/page.tsx`):
+   - Extend the existing search to also match transactions.transaction_number (the join is already inner; just expand the .or clause)
+   - Add description column (from asset_type_details.details->>'description') — show truncated with full-text on hover/tooltip if practical
+
+Any issues or questions — ask me. When complete, write drafts/7h-verifysteps.md then ask whether to verify manually or automate. Tell me what the next step is.
+
+Do not commit until I review. No co-authoring on commits.
+```
+
+**7i — Description Column on Operational Reports**
+```
+@TODO.md @CLAUDE.md @.agents/ui-builder.md
+
+Mark the previous step as complete. Proceed with Phase 7i — Description Column on Operational Reports and ONLY that step.
+
+Use ui-builder for the column additions. Use TaskCreate to track sub-tasks.
+
+Three reports, same pattern — add Description column to both the on-screen table and the CSV download:
+
+1. `app/(app)/reports/received/page.tsx` + `components/reports/received-report.tsx`
+2. `app/(app)/reports/available/page.tsx` + `components/reports/available-report.tsx` (the query already joins asset_type_details — just surface details->>'description' into the row)
+3. `app/(app)/reports/sold/page.tsx` + `components/reports/sold-report.tsx`
+
+The Available report is already wide (22 columns) — Description goes at the end, next to Notes. Already has horizontal scroll + landscape print per 6b.
+
+Any issues or questions — ask me. When complete, write drafts/7i-verifysteps.md then ask whether to verify manually or automate. Tell me what the next step is.
+
+Do not commit until I review. No co-authoring on commits.
+```
+
+**7j — Bulk Shipment-Info Update**
+```
+@TODO.md @CLAUDE.md @.agents/api-architect.md @.agents/ui-builder.md @.agents/workflow-expert.md
+
+Mark the previous step as complete. Proceed with Phase 7j — Bulk Shipment-Info Update and ONLY that step.
+
+Use api-architect for the new asset_shipments table + bulk route handler, ui-builder for the bulk-action dialog, workflow-expert for the recycler-vs-sale shipment distinction. Use TaskCreate to track sub-tasks.
+
+Per Amber: "when 2500 assets are sent to recycler... mass enter shipment information on multiple records at a time".
+
+Design (PROPOSED — confirm with user at implementation start before writing migration):
+- New `asset_shipments` table (NOT reusing asset_sales — sales are a different business event):
+  - id, asset_id FK, shipment_date, carrier, method, tracking_number, recipient_name, recipient_type (recycler/internal/other), notes, created_by, created_at, updated_at
+- An asset can have at most one shipment per receiving event — if you need multiple shipments per asset, we'd want a different model. Open the design question.
+- Migration `00011_asset_shipments.sql` (or 00012 depending on landing order vs 7k)
+- Extend `app/api/assets/bulk/route.ts` to accept a "ship" action — body shape `{ ids: string[], shipment: {...} }` — does a transactional bulk insert into asset_shipments
+- Asset list bulk-action menu (after multi-select) gets a "Ship Selected (N)" option that opens a dialog with shipment fields + confirm dialog showing the count
+- Per Amber's example "2500 assets" — chunk inserts to stay under any Supabase row limits (500 at a time recommended)
+
+Tests:
+- vitest for the bulk insert path including the chunked-insert logic
+- e2e for select-many + Ship dialog flow + DB sanity (rows present, asset count matches)
+
+Any issues or questions — ask me. When complete, write drafts/7j-verifysteps.md then ask whether to verify manually or automate. Tell me what the next step is.
+
+Do not commit until I review. No co-authoring on commits.
+```
+
+**7k — New Hard Drive Asset Type**
+```
+@TODO.md @CLAUDE.md @.agents/api-architect.md @.agents/ui-builder.md @.agents/workflow-expert.md
+
+Mark the previous step as complete. Proceed with Phase 7k — New Hard Drive Asset Type and ONLY that step.
+
+Use api-architect for the CHECK constraint migration + field-definitions seed, ui-builder for the asset type Select options and badge color, workflow-expert for HD Crush typeahead handling. Use TaskCreate to track sub-tasks.
+
+This mirrors the Phase 7c tablet work but for a standalone hard drive that has NO parent device (the asset IS the drive).
+
+Schema (migration `00011_hard_drive_asset_type.sql` — number may shift if 7j lands first):
+- ALTER `assets` CHECK constraint to include 'hard_drive' (11 types total)
+- ALTER `asset_type_field_definitions` CHECK constraint same way
+- Seed field_definitions for hard_drive:
+  - Hardware: size (text, e.g. "1TB"), drive_type (select, options ["HDD","SSD","M.2","NVMe"])
+  - Type-specific: TBD — ask Amber at implementation start if any extras
+
+UI surfaces to update (same pattern as 7c tablet):
+- intake form ASSET_TYPES
+- asset edit form ASSET_TYPES tuple
+- asset-filters.tsx ASSET_TYPES
+- admin-panel.tsx ASSET_TYPES
+- 2 server-side type casts (assets/page.tsx + api/export/route.ts)
+- Dashboard TYPE_COLORS map — pick a distinct color (orange or stone — fuchsia=tv, violet=laptop, rose=server, pink=tablet)
+
+HD Crush workflow:
+- Extend `app/(app)/hd-crush/actions.ts` typeahead to ALSO search `assets.serial_number` where `asset_type = 'hard_drive'` (currently only searches the asset_hard_drives child table)
+- When the matched row is a standalone hard_drive asset, the "parent" is the asset itself — display + crush act on the asset's `asset_sanitization` row (device-level)
+
+Docs:
+- CLAUDE.md asset types table — add Hard Drive row
+- .agents/workflow-expert.md common asset types list
+
+Any issues or questions — ask me. When complete, write drafts/7k-verifysteps.md then ask whether to verify manually or automate. Tell me what the next step is.
+
+Do not commit until I review. No co-authoring on commits.
+```
+
+**7l — Drive Sub-Form Saves Without Sanitization (with Role Gate)**
+```
+@TODO.md @CLAUDE.md @.agents/ui-builder.md @.agents/api-architect.md
+
+Mark the previous step as complete. Proceed with Phase 7l — Drive Sub-Form Saves Without Sanitization and ONLY that step.
+
+Use ui-builder for the drive row form logic + role gate, api-architect for confirming the route handler accepts NULL sanitization fields. Use TaskCreate to track sub-tasks.
+
+Per Amber: "they can update hard drive serial/mfg/size and save without choosing a sanitization method. Only Johnny or I update sanitization — keep it that way."
+
+Two changes:
+
+1. **Allow save without sanitization**: investigate where the current Hardware tab drive row blocks save without `sanitization_method` (it's probably client-side validation in `components/forms/asset-form/asset-edit-form.tsx` — the DB already allows NULL since 00003 schema v2 made all sanitization columns nullable). Remove that gate.
+
+2. **Role gate (Amber's preference)**: the sanitization sub-fields on each drive row (method, details, verification, validation, tech, date) should be:
+   - Visible + editable for `admin` and `operator`
+   - Hidden (or read-only — your call) for `receiving_tech`
+   - Server-side route handler should also reject sanitization-field changes from a `receiving_tech` request (defense in depth)
+
+Tests:
+- vitest for the PUT route handler accepting drives with NULL sanitization fields
+- e2e for the form save path (admin user, sanitization blank, save succeeds)
+- e2e for receiving_tech NOT seeing sanitization fields (requires seeding a receiving_tech test user in global-setup; defer if it's a big lift and just verify the UI gate via an existing test user with a runtime role-stub)
+
+Any issues or questions — ask me. When complete, write drafts/7l-verifysteps.md then ask whether to verify manually or automate. Tell me what the next step is.
+
+Do not commit until I review. No co-authoring on commits.
+```
+
+---
+
 ### Phase 11: Production Deployment
 
 **11.1 — Production Deployment**

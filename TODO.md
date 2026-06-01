@@ -598,6 +598,80 @@
 
 ---
 
+## Phase 7+ Tester Feedback (Amber v4 — 6/01/2026)
+
+> Second round of Phase 7 feedback after Amber used the multi-location / mfg / tablet / fields / reset changes in real workflows.
+
+### 7f — Reset Form Preserves Transaction
+- [ ] Modify `resetEntireForm()` in `components/forms/intake-form.tsx` to NOT clear `transactionId`
+- [ ] `tracking_mode` still resets to `'serialized'` (only transaction is preserved per Amber's ask)
+- [ ] Update `isFormDirty()` to exclude `transactionId` from the dirty check (otherwise a preselected transaction always triggers the AlertDialog)
+- [ ] Update AlertDialog body text — note that transaction is kept
+- [ ] Update existing e2e (`tests/e2e/intake-reset.spec.ts`) to assert transaction PERSISTS after reset
+
+### 7g — Hard-Block Duplicate Serial Saves
+- [ ] Reverse the Phase 5.2b "soft warning allow override" decision per Amber's feedback
+- [ ] Update `app/api/assets/intake/route.ts`: before insert, check if `serial_number` already exists (when non-empty). Return 409 with structured error including the existing asset's `internal_asset_id`.
+- [ ] Update intake form to surface the 409 as a hard error (toast or banner) and NOT clear the form
+- [ ] Keep the on-blur soft warning (early feedback) — it still helps but no longer "the last word"
+- [ ] **Open question for Amber**: do we ever legitimately have two assets with the same serial number (e.g., re-received returns, typos)? If yes, add an "I know — save anyway" checkbox. If no (default), hard-block only.
+- [ ] Tests: vitest for the route handler returning 409 on duplicate; e2e for the intake form showing the error AND DB shows only one asset (no duplicate row)
+
+### 7h — Inventory & Asset List: Transaction Search + Column Additions
+- [ ] Inventory page (`app/(app)/inventory/page.tsx`):
+  - [ ] Add transaction-number search field (joins through `inventory.asset_id` → `assets.transaction_id` → `transactions.transaction_number`)
+  - [ ] Add columns: `asset_type`, `serial_number` (from the linked asset)
+  - [ ] **Optional removal**: drop `part_number` column to make room (Amber's wording: "you can remove the part number if needed")
+- [ ] Asset list page (`app/(app)/assets/page.tsx`):
+  - [ ] Extend search to also match `transactions.transaction_number` (via the existing inner join)
+  - [ ] Add `description` column (from `asset_type_details.details->>'description'`)
+- [ ] Tests: e2e for both search-by-transaction features + column visibility
+
+### 7i — Description Column on Operational Reports
+- [ ] `app/(app)/reports/received/page.tsx` + `components/reports/received-report.tsx`: add Description column (table + CSV)
+- [ ] `app/(app)/reports/available/page.tsx` + `components/reports/available-report.tsx`: add Description column (the query already joins `asset_type_details`, so just surface it)
+- [ ] `app/(app)/reports/sold/page.tsx` + `components/reports/sold-report.tsx`: add Description column
+- [ ] Tests: e2e to confirm Description appears in each report's table + CSV header
+
+### 7j — Bulk Shipment-Info Update
+- [ ] Per Amber: "when 2500 assets are sent to recycler... mass enter shipment info on multiple records at a time"
+- [ ] **Design decision needed**: where does outgoing-shipment data live?
+  - (a) Extend `assets` with shipment_date / carrier / method / tracking_number columns
+  - (b) New `asset_shipments` table (separate from `asset_sales` which is for resale)
+  - (c) Reuse `asset_sales` with a flag (probably wrong — sales-vs-recycling are different)
+  - Recommendation: **(b)** — a new `asset_shipments` table, FK to assets, supports both recycler and one-off non-sale shipments. asset_sales stays sales-specific.
+- [ ] Migration `00011_asset_shipments.sql` (number TBD — bumped by 7k if 7k lands first):
+  - [ ] CREATE `asset_shipments` (id, asset_id FK, shipment_date, carrier, method, tracking_number, recipient_name, recipient_type [recycler/internal/other], notes, created_by, created_at, updated_at)
+  - [ ] Indexes + RLS
+- [ ] Extend `app/api/assets/bulk/route.ts` to accept a "ship" action with shipment fields
+- [ ] Add a "Ship Selected" bulk action button on the asset list (after multi-select)
+- [ ] Bulk dialog UI: date picker, carrier (text), method (text), tracking (text), recipient name + type
+- [ ] Confirm dialog showing the affected count before commit
+- [ ] Tests: vitest for the bulk shipment insert path; e2e for select-many + Ship dialog → confirm DB rows + DB consistent state
+
+### 7k — New Hard Drive Asset Type
+- [ ] Migration `00011_hard_drive_asset_type.sql` (number may shift to 00012 if 7j lands first):
+  - [ ] ALTER `assets` CHECK constraint to include `'hard_drive'` (drop + recreate, 11 types total)
+  - [ ] ALTER `asset_type_field_definitions` CHECK constraint same way
+  - [ ] Seed `asset_type_field_definitions` for hard_drive:
+    - Hardware: `size` (text — e.g. "1TB"), `drive_type` (select, options ["HDD","SSD","M.2","NVMe"])
+    - Type-specific: any additional notes Amber wants here (TBD — flag at implementation time)
+- [ ] Update `lib/supabase/types.ts` asset_type union — add `'hard_drive'`
+- [ ] Add hard_drive to all 4 client-side ASSET_TYPES arrays + 2 server casts (same surfaces as 7c tablet)
+- [ ] Add hard_drive color to dashboard `TYPE_COLORS` map (pick distinct — e.g. orange or stone)
+- [ ] **HD Crush typeahead**: extend `app/(app)/hd-crush/actions.ts` search to also match standalone `assets.serial_number` where `asset_type = 'hard_drive'` (not just `asset_hard_drives.serial_number`). Display the asset itself rather than searching for a parent.
+- [ ] Update `CLAUDE.md` asset types table + `.agents/workflow-expert.md` common types list
+- [ ] Tests: vitest for schema; e2e for create + edit form rendering correct fields
+
+### 7l — Drive Sub-Form Saves Without Sanitization (Role Gate Optional)
+- [ ] Per Amber: "they can update hard drive serial/mfg/size and save without choosing a sanitization method. Only Johnny or I update sanitization — keep it that way."
+- [ ] Investigate where the current validation blocks save without sanitization (probably in `components/forms/asset-form/asset-edit-form.tsx` drive row logic OR the `PUT /api/assets/[id]` route handler — DB already allows NULL)
+- [ ] Allow saving a drive row with only serial / manufacturer / size populated (sanitization fields all NULL)
+- [ ] **Role gate** (Amber's preference): hide or read-only the sanitization sub-fields (method, details, verification, validation, tech, date) for `receiving_tech` role. Visible + editable for `admin` and `operator`. This way receiving techs CAN'T accidentally pick "None" without thinking.
+- [ ] Tests: vitest for the route handler accepting drives with NULL sanitization; e2e for the form save path; e2e for receiving_tech role NOT seeing sanitization fields (requires seeding a receiving_tech test user — defer if too heavy and just gate the UI)
+
+---
+
 ## Phase 11: Production Deployment
 
 ### 11.1 — Production Deployment
@@ -666,5 +740,6 @@
 | Phase 5: Hardening & Tester Feedback v1 | Complete | 5.1 ✅, 5.2a ✅, 5.2b ✅, 5.2c ✅, 5.2d ✅, 5.2e ✅ |
 | Phase 6: Tester Feedback v2 | Complete | 6a ✅, 6b ✅, 6c ✅ |
 | Phase 7: Tester Feedback v3 | Complete | 7a ✅, 7b ✅, 7c ✅, 7d ✅, 7e ✅ |
+| Phase 7+: Tester Feedback v4 | Not Started | 7f reset-keeps-txn, 7g hard-block-dupe, 7h list searches/cols, 7i description on reports, 7j bulk shipment, 7k hard_drive type, 7l drive saves w/o sanitization |
 | Phase 11: Production Deployment | Not Started | Vercel setup |
 | Phase 12: Data Migration | Not Started | Caspio export + import script |
