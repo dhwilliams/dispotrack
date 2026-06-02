@@ -14,6 +14,7 @@ interface ReceivedRow {
   quantity: number
   status: string
   notes: string | null
+  description: string | null
   created_at: string
 }
 
@@ -85,6 +86,7 @@ export function ReceivedReport({
       "Status",
       "Date Received",
       "Notes",
+      "Description",
     ]
     const rows = assets.map((a) => [
       a.internal_asset_id,
@@ -97,6 +99,7 @@ export function ReceivedReport({
       statusLabels[a.status] ?? a.status,
       formatDate(a.created_at),
       a.notes ?? "",
+      a.description ?? "",
     ])
 
     const csv = [headers, ...rows]
@@ -168,6 +171,7 @@ export function ReceivedReport({
               <th>Status</th>
               <th>Date Received</th>
               <th>Notes</th>
+              <th>Description</th>
             </tr>
           </thead>
           <tbody>
@@ -183,6 +187,12 @@ export function ReceivedReport({
                 <td>{statusLabels[asset.status] ?? asset.status}</td>
                 <td>{formatDate(asset.created_at)}</td>
                 <td className="max-w-48 truncate text-xs">{asset.notes ?? ""}</td>
+                <td
+                  className="max-w-48 truncate text-xs"
+                  title={asset.description ?? undefined}
+                >
+                  {asset.description ?? ""}
+                </td>
               </tr>
             ))}
           </tbody>

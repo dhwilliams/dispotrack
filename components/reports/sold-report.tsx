@@ -21,6 +21,7 @@ interface SoldRow {
   logista_so: string | null
   customer_po_number: string | null
   asset_destination: string | null
+  description: string | null
 }
 
 interface SoldReportProps {
@@ -97,6 +98,7 @@ export function SoldReport({
       "Account #",
       "Destination",
       "eBay Item #",
+      "Description",
     ]
     const rows = assets.map((a) => [
       formatDate(a.shipment_date),
@@ -115,6 +117,7 @@ export function SoldReport({
       a.customer_account_number,
       destinationLabels[a.asset_destination ?? ""] ?? a.asset_destination ?? "",
       a.ebay_item_number ?? "",
+      a.description ?? "",
     ])
 
     const csv = [headers, ...rows]
@@ -205,12 +208,13 @@ export function SoldReport({
                 <th>Location</th>
                 <th>Account #</th>
                 <th>Destination</th>
+                <th>Description</th>
               </tr>
             </thead>
             <tbody>
               {assets.length === 0 ? (
                 <tr>
-                  <td colSpan={15} style={{ textAlign: "center", padding: "24px" }}>
+                  <td colSpan={16} style={{ textAlign: "center", padding: "24px" }}>
                     No sold assets found in this date range.
                   </td>
                 </tr>
@@ -232,6 +236,12 @@ export function SoldReport({
                     <td className="whitespace-nowrap">{asset.location_name ?? ""}</td>
                     <td className="whitespace-nowrap">{asset.customer_account_number}</td>
                     <td className="whitespace-nowrap">{destinationLabels[asset.asset_destination ?? ""] ?? asset.asset_destination ?? ""}</td>
+                    <td
+                      className="max-w-48 truncate text-xs"
+                      title={asset.description ?? undefined}
+                    >
+                      {asset.description ?? ""}
+                    </td>
                   </tr>
                 ))
               )}

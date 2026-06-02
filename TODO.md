@@ -602,12 +602,12 @@
 
 > Second round of Phase 7 feedback after Amber used the multi-location / mfg / tablet / fields / reset changes in real workflows.
 
-### 7f — Reset Form Preserves Transaction
-- [ ] Modify `resetEntireForm()` in `components/forms/intake-form.tsx` to NOT clear `transactionId`
-- [ ] `tracking_mode` still resets to `'serialized'` (only transaction is preserved per Amber's ask)
-- [ ] Update `isFormDirty()` to exclude `transactionId` from the dirty check (otherwise a preselected transaction always triggers the AlertDialog)
-- [ ] Update AlertDialog body text — note that transaction is kept
-- [ ] Update existing e2e (`tests/e2e/intake-reset.spec.ts`) to assert transaction PERSISTS after reset
+### 7f — Reset Form Preserves Transaction ✅
+- [x] Modify `resetEntireForm()` in `components/forms/intake-form.tsx` to NOT clear `transactionId`
+- [x] `tracking_mode` still resets to `'serialized'` (only transaction is preserved per Amber's ask)
+- [x] Update `isFormDirty()` to exclude `transactionId` from the dirty check (otherwise a preselected transaction always triggers the AlertDialog)
+- [x] Update AlertDialog body text — note that transaction is kept
+- [x] Update existing e2e (`tests/e2e/intake-reset.spec.ts`) — added 1 new test ("preselected txn alone is silent"), flipped 2 existing tests (body wording + Confirm preserves transaction). 7/7 in spec, 75/75 cumulative.
 
 ### 7g — Hard-Block Duplicate Serial Saves ✅
 - [x] Reverse the Phase 5.2b "soft warning allow override" decision per Amber's feedback
@@ -632,11 +632,11 @@
   - [x] Column count bumped 12 → 13
 - [x] Tests: 7 playwright e2e (3 inventory + 4 asset list) — 7/7 passing on first run
 
-### 7i — Description Column on Operational Reports
-- [ ] `app/(app)/reports/received/page.tsx` + `components/reports/received-report.tsx`: add Description column (table + CSV)
-- [ ] `app/(app)/reports/available/page.tsx` + `components/reports/available-report.tsx`: add Description column (the query already joins `asset_type_details`, so just surface it)
-- [ ] `app/(app)/reports/sold/page.tsx` + `components/reports/sold-report.tsx`: add Description column
-- [ ] Tests: e2e to confirm Description appears in each report's table + CSV header
+### 7i — Description Column on Operational Reports ✅
+- [x] `app/(app)/reports/received/page.tsx` + `components/reports/received-report.tsx`: added Description column (table + CSV). Page extended select with `asset_type_details(details)`; component appended Description after Notes.
+- [x] `app/(app)/reports/available/page.tsx` + `components/reports/available-report.tsx`: added Description column at end. Query already joined `asset_type_details` from 6b — just surfaced `details.description` into the row.
+- [x] `app/(app)/reports/sold/page.tsx` + `components/reports/sold-report.tsx`: added Description column at end. Page extended the `assets()` embed with `asset_type_details(details)`. Empty-state colspan bumped 15 → 16.
+- [x] Tests: +6 playwright e2e (table header + description rendering + CSV header position for each of 3 reports) — 6/6 passing on first run. Cumulative 81/81 (32 vitest + 49 playwright).
 
 ### 7j — Bulk Shipment-Info Update
 - [ ] Per Amber: "when 2500 assets are sent to recycler... mass enter shipment info on multiple records at a time"
@@ -745,6 +745,6 @@
 | Phase 5: Hardening & Tester Feedback v1 | Complete | 5.1 ✅, 5.2a ✅, 5.2b ✅, 5.2c ✅, 5.2d ✅, 5.2e ✅ |
 | Phase 6: Tester Feedback v2 | Complete | 6a ✅, 6b ✅, 6c ✅ |
 | Phase 7: Tester Feedback v3 | Complete | 7a ✅, 7b ✅, 7c ✅, 7d ✅, 7e ✅ |
-| Phase 7+: Tester Feedback v4 | In Progress | 7g ✅, 7h ✅, 7f reset-keeps-txn, 7i description on reports, 7j bulk shipment, 7k hard_drive type, 7l drive saves w/o sanitization |
+| Phase 7+: Tester Feedback v4 | In Progress | 7f ✅, 7g ✅, 7h ✅, 7i ✅, 7j bulk shipment, 7k hard_drive type, 7l drive saves w/o sanitization |
 | Phase 11: Production Deployment | Not Started | Vercel setup |
 | Phase 12: Data Migration | Not Started | Caspio export + import script |

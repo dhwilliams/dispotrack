@@ -26,6 +26,7 @@ interface SoldRow {
   logista_so: string | null
   customer_po_number: string | null
   asset_destination: string | null
+  description: string | null
 }
 
 function defaultStartDate(): string {
@@ -65,7 +66,7 @@ export default function SoldReportPage() {
       const { data: sales, error: salesError } = await supabase
         .from("asset_sales")
         .select(
-          "sale_price, sold_date, shipment_date, sold_to_name, logista_so, customer_po_number, ebay_item_number, buyer_id, buyers(name), assets(internal_asset_id, serial_number, asset_type, manufacturer, model, asset_destination, transactions(transaction_number, clients(name, account_number), client_locations(name)))"
+          "sale_price, sold_date, shipment_date, sold_to_name, logista_so, customer_po_number, ebay_item_number, buyer_id, buyers(name), assets(internal_asset_id, serial_number, asset_type, manufacturer, model, asset_destination, asset_type_details(details), transactions(transaction_number, clients(name, account_number), client_locations(name)))"
         )
         .gte("sold_date", startDate)
         .lte("sold_date", endDate)
@@ -85,6 +86,7 @@ export default function SoldReportPage() {
           manufacturer: string | null
           model: string | null
           asset_destination: string | null
+          asset_type_details: { details: Record<string, unknown> } | null
           transactions: {
             transaction_number: string
             clients: { name: string; account_number: string }
@@ -100,6 +102,11 @@ export default function SoldReportPage() {
         } else if (sale.sold_to_name) {
           buyerName = sale.sold_to_name
         }
+
+        const description =
+          (asset.asset_type_details?.details?.description as
+            | string
+            | undefined) ?? null
 
         return {
           shipment_date: sale.shipment_date,
@@ -118,6 +125,7 @@ export default function SoldReportPage() {
           logista_so: sale.logista_so,
           customer_po_number: sale.customer_po_number,
           asset_destination: asset.asset_destination,
+          description,
         }
       })
 

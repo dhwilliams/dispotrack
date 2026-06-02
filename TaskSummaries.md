@@ -721,3 +721,36 @@ Error handling hardened:
 - Description column truncates with `max-w-[12rem]` to keep the row compact. Full text on hover via the `title` attribute (no Tooltip component needed). If line-wrap is preferred later, change `truncate` to `whitespace-normal`.
 - Description on asset list pulls from `asset_type_details.details.description` specifically (the JSONB field set by Phase 7d intake for other/network types). Other JSONB descriptors in `details` like `printer_type` aren't surfaced here — the Available report (6b) has dedicated columns for those.
 
+
+
+## Phase 7f — Reset Form Preserves Transaction
+
+**What was done:**
+- Single-file production change: `components/forms/intake-form.tsx`. Modifies the Phase 7e Reset Form behavior per Amber's feedback that resetting between batched assets should keep the same transaction selected.
+- `resetEntireForm()` no longer calls `setTransactionId("")`. It still resets `tracking_mode` to `'serialized'` and still calls `clearAllFields()` which wipes serial / asset_type / manufacturer / model / asset_tag / quantity / weight / notes / description / errors / dup state.
+- `isFormDirty()` dropped the `transactionId !== ""` check. A preselected transaction is no longer "dirty" on its own — otherwise the AlertDialog would always fire after a fresh `?transaction=...` load (and never fire silently when there's no other input).
+- AlertDialog body text updated to explicitly note the selected transaction is kept, so the user knows what to expect before clicking Clear Form.
+- Tests: existing `tests/e2e/intake-reset.spec.ts` got +1 new test ("Preselected transaction alone does NOT trigger the AlertDialog") and 2 existing tests were flipped: "Dirty form…" now fills MFG Model to dirty the form + asserts new body wording; "Confirm wipes…" renamed to "Phase 7f: Confirm wipes asset fields but PRESERVES the transaction" — asserts Add Asset stays ENABLED, fields are wiped, and adds a sanity write proving a fresh asset under the SAME txn lands. 7/7 in the spec, cumulative 75/75 (32 vitest + 43 playwright).
+
+**Notable decisions:**
+- TODO mentioned `model_name` / `mfg_part_number` in the wipe list — those aren't part of the intake form's state (only the edit form has them). No change needed; left them off the dirty check.
+- The post-submit "Clear All" ghost button (different button, partial reset preserving transaction per Phase 5.2b) is untouched — coexists with Reset Form because they model different workflows ("new asset, same context" vs "new session, same transaction now too").
+- The on-blur amber duplicate warning text from 7g is still stale ("you can still save if intentional") — not in scope here, still flagged as an open question for Amber from 7g.
+- Test failure on first full-suite run was the BarcodeScanner-wrapper `getByLabel(/Serial Number/i)` gotcha (same as 7g). Fixed test-side with `input#serial_number` — wrapper passes the id through. No production change needed.
+
+
+## Phase 7i — Description Column on Operational Reports
+
+**What was done:**
+- 6 file changes — 3 page-level (received/available/sold) + 3 report components. Surfaced `asset_type_details.details.description` (Phase 7d's intake field for `other`/`network` types) into the on-screen table and CSV download of all three operational reports.
+- Received report (`app/(app)/reports/received/page.tsx` + `components/reports/received-report.tsx`): extended the assets select to join `asset_type_details(details)`. Added `description: string | null` to `ReceivedRow`. New `<th>Description</th>` after Notes (11th column). Same truncate + `title`-on-hover pattern as 7h. CSV "Description" appended after "Notes".
+- Available report (`app/(app)/reports/available/page.tsx` + `components/reports/available-report.tsx`): query already joined `asset_type_details` for Phase 6b CPU/memory/etc. — just surfaced `details.description` in the row mapping. Description column appended after Notes (24th column, was 23). Synced top + main scrollbars still work because the `useEffect` re-runs on `assets` change and re-measures `table.scrollWidth`. Landscape print kept from 6b.
+- Sold report (`app/(app)/reports/sold/page.tsx` + `components/reports/sold-report.tsx`): extended the chained `assets()` embed with `asset_type_details(details)`. Added `description` to `SoldRow`. New column at end after Destination (16th, was 15). Empty-state `colSpan` widened 15 → 16.
+- Tests: new spec `tests/e2e/reports-description.spec.ts` — 6 tests (table + CSV per report). All 6 passed on first run. CSV header tests pin column *position* via neighbour-pair regex (`"Notes","Description"`, `"Screen Size","Description"`, `"eBay Item #","Description"`) so accidental reordering would fail. Cumulative 81/81 (32 vitest + 49 playwright).
+
+**Notable decisions:**
+- Description goes at the END of each table (after Notes for Received/Available, after Destination for Sold) per the prompt. If Amber wants it next to Model for context, all three are one-line shuffles.
+- Empty cell for missing description (no "N/A") to match the existing Notes convention. Switch to "N/A" if Amber asks — single-line change.
+- CSV download tests use Playwright's `waitForEvent("download")` → `download.path()` → `readFile` and assert against the raw CSV text. New pattern for this codebase — first download-handling test. Self-contained in the new spec, no helper needed.
+- Description column is sourced specifically from `asset_type_details.details->>'description'` (the Phase 7d intake field). Other JSONB fields in `details` (printer_type, total_memory, etc.) aren't surfaced into this column — they have dedicated columns on the Available report and aren't relevant on Received/Sold.
+- Same truncate (`max-w-48`/`max-w-[12rem]`) + `title`-attribute hover pattern as 7h's asset-list description column — keeps the UX consistent across the table-with-description surfaces.

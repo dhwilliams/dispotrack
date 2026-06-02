@@ -115,6 +115,7 @@ export default function AvailableAssetsReportPage() {
           functioning_category: grading?.functioning_category ?? null,
           ac_adapter: details?.ac_adapter != null ? Boolean(details.ac_adapter) : null,
           screen_size: (details?.screen_size as string) ?? null,
+          description: (details?.description as string) ?? null,
         }
       })
 

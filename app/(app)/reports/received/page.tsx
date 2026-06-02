@@ -21,6 +21,7 @@ interface ReceivedRow {
   quantity: number
   status: string
   notes: string | null
+  description: string | null
   created_at: string
 }
 
@@ -96,7 +97,9 @@ export default function ReceivedReportPage() {
       // Fetch all assets for this transaction
       const { data: assets, error: assetsError } = await supabase
         .from("assets")
-        .select("internal_asset_id, serial_number, asset_type, manufacturer, model, model_name, asset_tag, quantity, tracking_mode, status, notes, created_at")
+        .select(
+          "internal_asset_id, serial_number, asset_type, manufacturer, model, model_name, asset_tag, quantity, tracking_mode, status, notes, created_at, asset_type_details(details)",
+        )
         .eq("transaction_id", transactionId)
         .order("asset_type")
         .order("created_at")
@@ -119,18 +122,26 @@ export default function ReceivedReportPage() {
       }
 
       // Map assets to report rows
-      const assetRows: ReceivedRow[] = (assets ?? []).map((a) => ({
-        internal_asset_id: a.internal_asset_id,
-        serial_number: a.serial_number,
-        asset_type: a.asset_type,
-        manufacturer: a.manufacturer,
-        model: a.model,
-        asset_tag: a.asset_tag,
-        quantity: a.quantity ?? 1,
-        status: a.status,
-        notes: a.notes,
-        created_at: a.created_at,
-      }))
+      const assetRows: ReceivedRow[] = (assets ?? []).map((a) => {
+        const typeDetails = a.asset_type_details as unknown as
+          | { details: Record<string, unknown> }
+          | null
+        const description =
+          (typeDetails?.details?.description as string | undefined) ?? null
+        return {
+          internal_asset_id: a.internal_asset_id,
+          serial_number: a.serial_number,
+          asset_type: a.asset_type,
+          manufacturer: a.manufacturer,
+          model: a.model,
+          asset_tag: a.asset_tag,
+          quantity: a.quantity ?? 1,
+          status: a.status,
+          notes: a.notes,
+          description,
+          created_at: a.created_at,
+        }
+      })
 
       setReportData({
         transactionNumber: transaction.transaction_number,

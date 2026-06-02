@@ -28,6 +28,7 @@ export interface AvailableRow {
   functioning_category: string | null
   ac_adapter: boolean | null
   screen_size: string | null
+  description: string | null
 }
 
 interface AvailableReportProps {
@@ -139,6 +140,7 @@ export function AvailableReport({
       "Functioning Category",
       "AC Adapter",
       "Screen Size",
+      "Description",
     ]
     const rows = assets.map((a) => [
       a.internal_asset_id,
@@ -164,6 +166,7 @@ export function AvailableReport({
       a.functioning_category ?? "",
       boolDisplay(a.ac_adapter),
       a.screen_size ?? "",
+      a.description ?? "",
     ])
 
     const csv = [headers, ...rows]
@@ -259,6 +262,7 @@ export function AvailableReport({
                 <th>Customer</th>
                 <th>Location</th>
                 <th>Notes</th>
+                <th>Description</th>
               </tr>
             </thead>
             <tbody>
@@ -287,6 +291,12 @@ export function AvailableReport({
                   <td className="whitespace-nowrap">{asset.customer_name}</td>
                   <td className="whitespace-nowrap">{asset.location_name ?? ""}</td>
                   <td className="max-w-48 truncate text-xs">{asset.notes ?? ""}</td>
+                  <td
+                    className="max-w-48 truncate text-xs"
+                    title={asset.description ?? undefined}
+                  >
+                    {asset.description ?? ""}
+                  </td>
                 </tr>
               ))}
             </tbody>
