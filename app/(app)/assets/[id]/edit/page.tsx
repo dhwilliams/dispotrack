@@ -36,6 +36,21 @@ export default async function AssetEditPage({ params }: AssetEditPageProps) {
     notFound()
   }
 
+  // Phase 7l: look up the current user's role so we can gate the sanitization
+  // sub-fields away from receiving_tech.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  let currentUserRole: string | null = null
+  if (user) {
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+    currentUserRole = (profile as { role: string } | null)?.role ?? null
+  }
+
   // Fetch all related data in parallel
   const [
     { data: grading },
@@ -115,6 +130,7 @@ export default async function AssetEditPage({ params }: AssetEditPageProps) {
         sales={(sales as AssetSales) ?? null}
         buyers={(buyers ?? []) as Buyer[]}
         statusHistory={(statusHistory ?? []) as AssetStatusHistory[]}
+        currentUserRole={currentUserRole}
       />
     </div>
   )

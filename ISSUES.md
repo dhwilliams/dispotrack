@@ -160,3 +160,17 @@
 ### Issue (test-side only): dash-stripping bit the unique-serial test
 - Generated a test serial as `${prefix}-X-${timestamp}` then asserted equality against the saved DB value. The intake form strips `[-\s]` before submit, so the saved value lacked the dashes.
 - **Fix**: introduced a `dashlessSerial(tag)` helper at the top of the spec for non-dash tests. The dedicated dash-equivalence test still uses a dashed input intentionally.
+
+
+## Phase 7l
+
+### Issue (resolved with new migration): RLS blocked receiving_tech UPDATE on asset_hard_drives
+- After implementing the UI + handler role gate, the "receiving_tech can update serial but cannot overwrite existing sanitization" e2e failed: PUT returned 200 with `success: true`, but the DB row's serial was unchanged.
+- Root cause: the existing UPDATE policy on `asset_hard_drives` (from migration 00002) used `is_operator_or_admin()` which only includes admin + operator. receiving_tech had INSERT permission (per 00004) but NOT UPDATE. RLS silently filtered every UPDATE to 0 rows — handler didn't error because Postgres reports the no-op as success.
+- This is NOT a test artifact — it directly contradicts Amber's primary ask ("receiving techs can update drive serial/mfg/size"). A real bug.
+- **Fix**: new migration `supabase/migrations/00011_receiving_tech_drives_update.sql` drops + recreates the UPDATE policy to include `receiving_tech` alongside `admin` + `operator`. Sanitization protection lives in the route handler (carry-forward existing values + UI gate), not in RLS.
+
+### Issue (test-side only): test.use({ storageState: PATH }) resolves before beforeAll
+- First attempt at the receiving_tech spec wrote the storage state file in `beforeAll` and referenced it via `test.use({ storageState: STORAGE_PATH })`. Failed with `ENOENT` because Playwright resolves the storage path at module-load time, before `beforeAll` runs.
+- **Fix**: switched to `test.use({ storageState: { cookies: [], origins: [] } })` (start clean) plus a `beforeEach` that signs in via the login page. ~1.5s sign-in overhead per test × 5 tests = acceptable.
+- Alternative considered: write a placeholder JSON at the top of the spec file (runs synchronously at module load). Rejected — felt brittle, the per-test sign-in pattern is more obviously correct.

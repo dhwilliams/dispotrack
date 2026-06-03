@@ -754,3 +754,24 @@ Error handling hardened:
 - CSV download tests use Playwright's `waitForEvent("download")` → `download.path()` → `readFile` and assert against the raw CSV text. New pattern for this codebase — first download-handling test. Self-contained in the new spec, no helper needed.
 - Description column is sourced specifically from `asset_type_details.details->>'description'` (the Phase 7d intake field). Other JSONB fields in `details` (printer_type, total_memory, etc.) aren't surfaced into this column — they have dedicated columns on the Available report and aren't relevant on Received/Sold.
 - Same truncate (`max-w-48`/`max-w-[12rem]`) + `title`-attribute hover pattern as 7h's asset-list description column — keeps the UX consistent across the table-with-description surfaces.
+
+
+## Phase 7l — Drive Sub-Form Saves Without Sanitization + Role Gate
+
+**What was done:**
+- 3 production files + 1 new migration + 3 new test files. The role gate is the real feature; the "allow blank save" portion turned out to be a contract lock-in only.
+- Investigation finding: nothing in the codebase ever blocked blank-sanitization saves. The DB allows NULL on every `asset_hard_drives.sanitization_*` column (migration 00003 made them all nullable; CHECK constraint allows NULL). The PUT route handler converts every empty string to NULL via `|| null`. The shadcn Select component accepts empty `value=""` (just shows placeholder). So Amber's pain was more likely *receiving techs picking "None" defensively* than a hard block. The vitest locks the schema contract so a future migration can't accidentally tighten it.
+- Role gate wiring:
+  - `app/(app)/assets/[id]/edit/page.tsx` — looks up `currentUserRole` from `user_profiles` and passes it to `AssetEditForm`.
+  - `components/forms/asset-form/asset-edit-form.tsx` — new `currentUserRole?: string | null` prop; new `canEditSanitization = currentUserRole !== "receiving_tech"`. Both the drive-row Sanitization sub-block (Separator + Method/Tech/Date/Verification/Validation/Date Crushed grid) AND the device-level Sanitization tab (TabsTrigger + TabsContent) are conditionally rendered on the flag.
+  - `app/api/assets/[id]/route.ts` — defense in depth. PUT entry point resolves role from `user_profiles`. `handleHardDrives(supabase, id, body, role)` — for `receiving_tech`, fetches all existing drive sanitization values in one batch query and uses those on UPDATE (carry-forward); for new drives, forces all sanitization fields to NULL regardless of payload. `handleSanitization` returns 403 immediately if `receiving_tech`.
+- Migration 00011_receiving_tech_drives_update.sql — widens the UPDATE policy on `asset_hard_drives` to include `receiving_tech` alongside `admin` + `operator`. Discovered mid-test-run; was a real prereq for Amber's primary ask, not a test artifact.
+- 4 new `data-testid` attrs on always-visible drive-row inputs (`drive-row-{idx}`, `drive-serial-{idx}`, `drive-mfg-{idx}`, `drive-size-{idx}`) for stable test selectors. Plus the `drive-sanitization-block` testid added during the gate implementation for clean assertion of "absent".
+- Tests: 1 vitest schema test + 6 e2e (1 admin blank-save + 5 receiving_tech UI/server gate). Cumulative 88/88 (33 vitest + 55 playwright).
+
+**Notable decisions:**
+- receiving_tech fixture user is inline-seeded in the spec's beforeAll (create via `adminDb().auth.admin.createUser`, update `user_profiles.role`); cleaned up in afterAll via `deleteAuthUserByEmail`. No change to `tests/e2e/global-setup.ts` — kept self-contained. If more receiving_tech specs appear we can promote to global-setup later.
+- The spec uses `test.use({ storageState: { cookies: [], origins: [] } })` to start each test clean (the playwright config defaults to the admin storage state), then `beforeEach` signs in via the login page. ~1.5s × 5 tests sign-in overhead. Switched to this after a first attempt using `test.use({ storageState: PATH })` with a file written in beforeAll — Playwright resolves the storage path at module-load time, before beforeAll runs, so the file was missing.
+- Server-side defense doesn't trust the request payload at all for `receiving_tech` — fetches existing sanitization values from DB and writes those back. This is the simplest invariant ("server is single source of truth for these fields") and doesn't require comparing fields per-column.
+- `canEditSanitization` is keyed only on `!== "receiving_tech"` — admin / operator / viewer all see sanitization (viewer is read-only via RLS anyway). If Amber later wants viewer ALSO gated out, flip to `["admin","operator"].includes(role)`.
+- Open question for Amber (flagged in 7l-verifysteps): the Sanitization Select still has no explicit "Clear" option, so an admin can't un-set a previously chosen method without writing an empty string elsewhere. Workaround is fine today; one-line UI add if she asks.

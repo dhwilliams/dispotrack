@@ -668,12 +668,15 @@
 - [ ] Update `CLAUDE.md` asset types table + `.agents/workflow-expert.md` common types list
 - [ ] Tests: vitest for schema; e2e for create + edit form rendering correct fields
 
-### 7l — Drive Sub-Form Saves Without Sanitization (Role Gate Optional)
-- [ ] Per Amber: "they can update hard drive serial/mfg/size and save without choosing a sanitization method. Only Johnny or I update sanitization — keep it that way."
-- [ ] Investigate where the current validation blocks save without sanitization (probably in `components/forms/asset-form/asset-edit-form.tsx` drive row logic OR the `PUT /api/assets/[id]` route handler — DB already allows NULL)
-- [ ] Allow saving a drive row with only serial / manufacturer / size populated (sanitization fields all NULL)
-- [ ] **Role gate** (Amber's preference): hide or read-only the sanitization sub-fields (method, details, verification, validation, tech, date) for `receiving_tech` role. Visible + editable for `admin` and `operator`. This way receiving techs CAN'T accidentally pick "None" without thinking.
-- [ ] Tests: vitest for the route handler accepting drives with NULL sanitization; e2e for the form save path; e2e for receiving_tech role NOT seeing sanitization fields (requires seeding a receiving_tech test user — defer if too heavy and just gate the UI)
+### 7l — Drive Sub-Form Saves Without Sanitization (Role Gate Optional) ✅
+- [x] Investigation: confirmed there was NO existing client-side or server-side block on blank-sanitization saves. DB allows NULL since 00003 schema v2; handler converts `""` → `null`; Select component handles empty value. The "allow blank save" portion is contract lock-in, not a code fix.
+- [x] Vitest pins the schema contract (`tests/unit/asset-drive-null-sanitization.test.ts`) so a future migration can't tighten one of the sanitization_* columns.
+- [x] **Role gate** wired in:
+  - [x] `app/(app)/assets/[id]/edit/page.tsx` looks up `currentUserRole` from `user_profiles` and passes it to the form.
+  - [x] `components/forms/asset-form/asset-edit-form.tsx`: new `currentUserRole?` prop; `canEditSanitization = role !== 'receiving_tech'`. Drive-row Sanitization sub-block (Separator + 6 inputs) AND device-level Sanitization tab (TabsTrigger + TabsContent) both gated on the flag.
+  - [x] `app/api/assets/[id]/route.ts`: resolves role from `user_profiles`. `handleHardDrives` accepts `role` and, for `receiving_tech`, ignores incoming sanitization fields (carry-forward existing values on edits via batch lookup, NULL on new drives). `handleSanitization` returns 403 for `receiving_tech`.
+- [x] Migration `supabase/migrations/00011_receiving_tech_drives_update.sql` — widens UPDATE policy on `asset_hard_drives` to include `receiving_tech`. Without this, receiving_tech UPDATE returns 200 but RLS silently filters to 0 rows affected — that's why scenario #5 of the test failed initially. Discovered mid-test-run.
+- [x] Tests: 1 vitest (NULL contract) + 6 playwright e2e (admin blank-save × 1, receiving_tech UI gate × 2, server defense × 3). 88/88 cumulative (33 vitest + 55 playwright).
 
 ---
 
@@ -745,6 +748,6 @@
 | Phase 5: Hardening & Tester Feedback v1 | Complete | 5.1 ✅, 5.2a ✅, 5.2b ✅, 5.2c ✅, 5.2d ✅, 5.2e ✅ |
 | Phase 6: Tester Feedback v2 | Complete | 6a ✅, 6b ✅, 6c ✅ |
 | Phase 7: Tester Feedback v3 | Complete | 7a ✅, 7b ✅, 7c ✅, 7d ✅, 7e ✅ |
-| Phase 7+: Tester Feedback v4 | In Progress | 7f ✅, 7g ✅, 7h ✅, 7i ✅, 7j bulk shipment, 7k hard_drive type, 7l drive saves w/o sanitization |
+| Phase 7+: Tester Feedback v4 | In Progress | 7f ✅, 7g ✅, 7h ✅, 7i ✅, 7l ✅, 7j bulk shipment, 7k hard_drive type |
 | Phase 11: Production Deployment | Not Started | Vercel setup |
 | Phase 12: Data Migration | Not Started | Caspio export + import script |

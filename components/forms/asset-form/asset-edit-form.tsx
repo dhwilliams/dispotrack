@@ -116,6 +116,9 @@ interface AssetEditFormProps {
   sales: AssetSales | null
   buyers: Buyer[]
   statusHistory: AssetStatusHistory[]
+  // Phase 7l: gate sanitization sub-fields away from receiving_tech so they
+  // can update drive serial/mfg/size without touching sanitization data.
+  currentUserRole?: string | null
 }
 
 interface DriveRow {
@@ -143,7 +146,11 @@ export function AssetEditForm({
   sales,
   buyers: initialBuyers,
   statusHistory,
+  currentUserRole,
 }: AssetEditFormProps) {
+  // Phase 7l: receiving_tech sees serial/mfg/size only — no sanitization fields
+  // anywhere. admin/operator/viewer get the full UI (viewer is read-only via RLS).
+  const canEditSanitization = currentUserRole !== "receiving_tech"
   const [saving, setSaving] = useState<string | null>(null)
   const [buyers, setBuyers] = useState(initialBuyers)
   const [removeDriveIdx, setRemoveDriveIdx] = useState<number | null>(null)
@@ -400,7 +407,7 @@ export function AssetEditForm({
           <TabsTrigger value="testing">Testing</TabsTrigger>
           {tsFields.length > 0 && <TabsTrigger value="type_specific">Type-Specific</TabsTrigger>}
           <TabsTrigger value="status">Status</TabsTrigger>
-          <TabsTrigger value="sanitization">Sanitization</TabsTrigger>
+          {canEditSanitization && <TabsTrigger value="sanitization">Sanitization</TabsTrigger>}
           <TabsTrigger value="sales">Sales</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
         </TabsList>
@@ -478,29 +485,33 @@ export function AssetEditForm({
                           <Trash2 className="h-3.5 w-3.5 text-destructive" />
                         </Button>
                       </div>
-                      <div className="grid gap-3 sm:grid-cols-3">
-                        <div className="space-y-1"><Label className="text-xs">Serial Number</Label><Input value={drive.serial_number} onChange={(e) => updateDrive(idx, "serial_number", e.target.value)} /></div>
-                        <div className="space-y-1"><Label className="text-xs">Manufacturer</Label><Input value={drive.manufacturer} onChange={(e) => updateDrive(idx, "manufacturer", e.target.value)} /></div>
-                        <div className="space-y-1"><Label className="text-xs">Size</Label><Input value={drive.size} onChange={(e) => updateDrive(idx, "size", e.target.value)} placeholder="e.g. 500GB" /></div>
+                      <div className="grid gap-3 sm:grid-cols-3" data-testid={`drive-row-${idx}`}>
+                        <div className="space-y-1"><Label className="text-xs">Serial Number</Label><Input data-testid={`drive-serial-${idx}`} value={drive.serial_number} onChange={(e) => updateDrive(idx, "serial_number", e.target.value)} /></div>
+                        <div className="space-y-1"><Label className="text-xs">Manufacturer</Label><Input data-testid={`drive-mfg-${idx}`} value={drive.manufacturer} onChange={(e) => updateDrive(idx, "manufacturer", e.target.value)} /></div>
+                        <div className="space-y-1"><Label className="text-xs">Size</Label><Input data-testid={`drive-size-${idx}`} value={drive.size} onChange={(e) => updateDrive(idx, "size", e.target.value)} placeholder="e.g. 500GB" /></div>
                       </div>
-                      <Separator />
-                      <p className="text-xs font-medium text-muted-foreground">Sanitization</p>
-                      <div className="grid gap-3 sm:grid-cols-3">
-                        <div className="space-y-1">
-                          <Label className="text-xs">Method</Label>
-                          <Select value={drive.sanitization_method} onValueChange={(v) => updateDrive(idx, "sanitization_method", v)}>
-                            <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-                            <SelectContent>
-                              {SANITIZATION_METHODS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-1"><Label className="text-xs">Tech</Label><Input value={drive.sanitization_tech} onChange={(e) => updateDrive(idx, "sanitization_tech", e.target.value)} /></div>
-                        <div className="space-y-1"><Label className="text-xs">Date</Label><Input type="date" value={drive.sanitization_date} onChange={(e) => updateDrive(idx, "sanitization_date", e.target.value)} /></div>
-                        <div className="space-y-1"><Label className="text-xs">Verification</Label><Input value={drive.wipe_verification_method} onChange={(e) => updateDrive(idx, "wipe_verification_method", e.target.value)} /></div>
-                        <div className="space-y-1"><Label className="text-xs">Validation</Label><Input value={drive.sanitization_validation} onChange={(e) => updateDrive(idx, "sanitization_validation", e.target.value)} /></div>
-                        <div className="space-y-1"><Label className="text-xs">Date Crushed</Label><Input type="date" value={drive.date_crushed} onChange={(e) => updateDrive(idx, "date_crushed", e.target.value)} /></div>
-                      </div>
+                      {canEditSanitization && (
+                        <>
+                          <Separator />
+                          <p className="text-xs font-medium text-muted-foreground">Sanitization</p>
+                          <div className="grid gap-3 sm:grid-cols-3" data-testid="drive-sanitization-block">
+                            <div className="space-y-1">
+                              <Label className="text-xs">Method</Label>
+                              <Select value={drive.sanitization_method} onValueChange={(v) => updateDrive(idx, "sanitization_method", v)}>
+                                <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                                <SelectContent>
+                                  {SANITIZATION_METHODS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1"><Label className="text-xs">Tech</Label><Input value={drive.sanitization_tech} onChange={(e) => updateDrive(idx, "sanitization_tech", e.target.value)} /></div>
+                            <div className="space-y-1"><Label className="text-xs">Date</Label><Input type="date" value={drive.sanitization_date} onChange={(e) => updateDrive(idx, "sanitization_date", e.target.value)} /></div>
+                            <div className="space-y-1"><Label className="text-xs">Verification</Label><Input value={drive.wipe_verification_method} onChange={(e) => updateDrive(idx, "wipe_verification_method", e.target.value)} /></div>
+                            <div className="space-y-1"><Label className="text-xs">Validation</Label><Input value={drive.sanitization_validation} onChange={(e) => updateDrive(idx, "sanitization_validation", e.target.value)} /></div>
+                            <div className="space-y-1"><Label className="text-xs">Date Crushed</Label><Input type="date" value={drive.date_crushed} onChange={(e) => updateDrive(idx, "date_crushed", e.target.value)} /></div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                 </CardContent>
@@ -623,7 +634,8 @@ export function AssetEditForm({
           <SaveButton tab="status" />
         </TabsContent>
 
-        {/* Sanitization Tab */}
+        {/* Sanitization Tab — Phase 7l: hidden from receiving_tech entirely */}
+        {canEditSanitization && (
         <TabsContent value="sanitization">
           <Card>
             <CardHeader><CardTitle className="text-base">Device-Level Sanitization</CardTitle></CardHeader>
@@ -656,6 +668,7 @@ export function AssetEditForm({
           )}
           <SaveButton tab="sanitization" />
         </TabsContent>
+        )}
 
         {/* Sales Tab */}
         <TabsContent value="sales">

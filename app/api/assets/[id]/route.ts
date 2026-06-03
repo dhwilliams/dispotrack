@@ -22,6 +22,15 @@ export async function PUT(
     )
   }
 
+  // Phase 7l: pull the user's role so we can gate sanitization writes away
+  // from receiving_tech (UI hides them; this is defense in depth).
+  const { data: profile } = await supabase
+    .from("user_profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+  const role = (profile as { role: string } | null)?.role ?? null
+
   switch (tab) {
     case "product_info":
       return handleProductInfo(supabase, id, body)
@@ -30,8 +39,14 @@ export async function PUT(
     case "grading":
       return handleGrading(supabase, id, body)
     case "hard_drives":
-      return handleHardDrives(supabase, id, body)
+      return handleHardDrives(supabase, id, body, role)
     case "sanitization":
+      if (role === "receiving_tech") {
+        return NextResponse.json(
+          { success: false, error: "Forbidden: receiving_tech cannot edit sanitization" },
+          { status: 403 },
+        )
+      }
       return handleSanitization(supabase, id, body)
     case "status":
       return handleStatus(supabase, id, body, user.id)
@@ -149,6 +164,7 @@ async function handleHardDrives(
   supabase: Supabase,
   id: string,
   body: Record<string, unknown>,
+  role: string | null,
 ) {
   const drives = body.drives as Array<{
     id?: string
@@ -165,6 +181,10 @@ async function handleHardDrives(
     date_crushed: string | null
   }>
 
+  // Phase 7l: drives saved without sanitization is the normal happy path —
+  // DB allows NULL on all sanitization_* columns since migration 00003.
+  // The handler converts empty strings to null below.
+
   // Delete drives not in the new list
   const keepIds = drives.filter((d) => d.id).map((d) => d.id as string)
 
@@ -178,26 +198,101 @@ async function handleHardDrives(
     await supabase.from("asset_hard_drives").delete().eq("asset_id", id)
   }
 
+  // Phase 7l: for receiving_tech, fetch existing sanitization values once so
+  // we can carry them forward on edits without trusting the request payload.
+  const isReceivingTech = role === "receiving_tech"
+  const existingSanByDriveId = new Map<
+    string,
+    {
+      sanitization_method: string | null
+      sanitization_details: string | null
+      wipe_verification_method: string | null
+      sanitization_validation: string | null
+      sanitization_tech: string | null
+      sanitization_date: string | null
+      date_crushed: string | null
+    }
+  >()
+  if (isReceivingTech) {
+    const driveIds = drives.filter((d) => d.id).map((d) => d.id as string)
+    if (driveIds.length > 0) {
+      const { data: existing } = await supabase
+        .from("asset_hard_drives")
+        .select(
+          "id, sanitization_method, sanitization_details, wipe_verification_method, sanitization_validation, sanitization_tech, sanitization_date, date_crushed",
+        )
+        .in("id", driveIds)
+      for (const row of existing ?? []) {
+        existingSanByDriveId.set(row.id, {
+          sanitization_method: row.sanitization_method,
+          sanitization_details: row.sanitization_details,
+          wipe_verification_method: row.wipe_verification_method,
+          sanitization_validation: row.sanitization_validation,
+          sanitization_tech: row.sanitization_tech,
+          sanitization_date: row.sanitization_date,
+          date_crushed: row.date_crushed,
+        })
+      }
+    }
+  }
+
   // Upsert each drive
   for (const drive of drives) {
+    // For receiving_tech: ignore whatever sanitization values came in. New
+    // drives get NULL; existing drives keep what's already in the DB.
+    const san = isReceivingTech
+      ? drive.id
+        ? existingSanByDriveId.get(drive.id) ?? {
+            sanitization_method: null,
+            sanitization_details: null,
+            wipe_verification_method: null,
+            sanitization_validation: null,
+            sanitization_tech: null,
+            sanitization_date: null,
+            date_crushed: null,
+          }
+        : {
+            sanitization_method: null,
+            sanitization_details: null,
+            wipe_verification_method: null,
+            sanitization_validation: null,
+            sanitization_tech: null,
+            sanitization_date: null,
+            date_crushed: null,
+          }
+      : {
+          sanitization_method: (drive.sanitization_method as
+            | "wipe"
+            | "destruct_shred"
+            | "clear_overwrite"
+            | "none"
+            | null) || null,
+          sanitization_details: drive.sanitization_details || null,
+          wipe_verification_method: drive.wipe_verification_method || null,
+          sanitization_validation: drive.sanitization_validation || null,
+          sanitization_tech: drive.sanitization_tech || null,
+          sanitization_date: drive.sanitization_date || null,
+          date_crushed: drive.date_crushed || null,
+        }
+
     const driveData = {
       asset_id: id,
       drive_number: drive.drive_number,
       serial_number: drive.serial_number || null,
       manufacturer: drive.manufacturer || null,
       size: drive.size || null,
-      sanitization_method: drive.sanitization_method as
+      sanitization_method: san.sanitization_method as
         | "wipe"
         | "destruct_shred"
         | "clear_overwrite"
         | "none"
         | null,
-      sanitization_details: drive.sanitization_details || null,
-      wipe_verification_method: drive.wipe_verification_method || null,
-      sanitization_validation: drive.sanitization_validation || null,
-      sanitization_tech: drive.sanitization_tech || null,
-      sanitization_date: drive.sanitization_date || null,
-      date_crushed: drive.date_crushed || null,
+      sanitization_details: san.sanitization_details,
+      wipe_verification_method: san.wipe_verification_method,
+      sanitization_validation: san.sanitization_validation,
+      sanitization_tech: san.sanitization_tech,
+      sanitization_date: san.sanitization_date,
+      date_crushed: san.date_crushed,
     }
 
     if (drive.id) {
