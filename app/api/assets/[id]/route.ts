@@ -75,12 +75,14 @@ async function handleProductInfo(
         | "desktop"
         | "server"
         | "laptop"
+        | "tablet"
         | "monitor"
         | "printer"
         | "phone"
         | "tv"
         | "network"
-        | "other",
+        | "other"
+        | "hard_drive",
       tracking_mode: (body.tracking_mode as "serialized" | "bulk") || "serialized",
       manufacturer: (body.manufacturer as string) || null,
       model: (body.model as string) || null,

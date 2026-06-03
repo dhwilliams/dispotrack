@@ -86,7 +86,8 @@ export async function POST(request: Request) {
         | "phone"
         | "tv"
         | "network"
-        | "other",
+        | "other"
+        | "hard_drive",
       tracking_mode: (trackingMode || "serialized") as "serialized" | "bulk",
       serial_number: cleanedSerial,
       manufacturer: manufacturer?.trim() || null,

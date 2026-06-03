@@ -174,3 +174,16 @@
 - First attempt at the receiving_tech spec wrote the storage state file in `beforeAll` and referenced it via `test.use({ storageState: STORAGE_PATH })`. Failed with `ENOENT` because Playwright resolves the storage path at module-load time, before `beforeAll` runs.
 - **Fix**: switched to `test.use({ storageState: { cookies: [], origins: [] } })` (start clean) plus a `beforeEach` that signs in via the login page. ~1.5s sign-in overhead per test × 5 tests = acceptable.
 - Alternative considered: write a placeholder JSON at the top of the spec file (runs synchronously at module load). Rejected — felt brittle, the per-test sign-in pattern is more obviously correct.
+
+
+## Phase 7k
+
+### Issue (test-side only): manufacturer combobox branching race
+- The intake-create test for `hard_drive` initially branched on `seagateOpt.count() === 0` to handle "Seagate in seeded master list" vs "use as one-off". The count() check raced the combobox popover render and the wrong branch fired, timing out on the "Use 'Seagate' as a one-off" option that wasn't being rendered (Seagate IS in the 126-name seed).
+- **Fix**: dropped the branching entirely. Now matches the Phase 7c tablet recipe — `getByRole("option", { name: /^Seagate$/i }).first().click()`. Playwright auto-waits for the option to be visible.
+- Lesson: when a value is known to be in the seeded master list, don't write resilient "either way" code. Just match it.
+
+### Issue (test-side only, MEMORY gotcha re-occurrence): getByRole("heading") doesn't match shadcn CardTitle
+- The HD Crush standalone + child-drive regression tests both used `page.getByRole("heading", { name: /.../ })` to anchor on the card title swap. Both timed out.
+- Root cause: shadcn `CardTitle` renders as `<div>`, not `<h*>` — documented in MEMORY.md from Phase 7a but I wrote the assertions without grepping for the existing pattern first.
+- **Fix**: switched both call sites to `page.getByText(/.../)`. Added inline comments at the call sites so the next person doesn't trip on it.

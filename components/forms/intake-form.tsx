@@ -47,6 +47,7 @@ const ASSET_TYPES = [
   { value: "server", label: "Server" },
   { value: "laptop", label: "Laptop" },
   { value: "tablet", label: "Tablet" },
+  { value: "hard_drive", label: "Hard Drive" },
   { value: "monitor", label: "Monitor" },
   { value: "printer", label: "Printer" },
   { value: "phone", label: "Phone" },

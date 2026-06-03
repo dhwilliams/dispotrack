@@ -127,6 +127,7 @@ All assets share: internal_asset_id (auto), serial_number (optional), asset_type
 | TV | — | television_type, screen_size |
 | Network | — | wifi_capabilities, half_or_full_rack, num_ports |
 | Other | — | description (free text) |
+| Hard Drive | size, drive_type (HDD/SSD/M.2/NVMe) | — (standalone drive with no parent device; HD Crush typeahead matches it on `assets.serial_number`) |
 
 ## Grading System
 

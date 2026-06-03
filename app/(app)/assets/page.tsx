@@ -109,7 +109,7 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
     }
     query = query.or(orClauses.join(","))
   }
-  if (asset_type) query = query.eq("asset_type", asset_type as "desktop" | "server" | "laptop" | "tablet" | "monitor" | "printer" | "phone" | "tv" | "network" | "other")
+  if (asset_type) query = query.eq("asset_type", asset_type as "desktop" | "server" | "laptop" | "tablet" | "monitor" | "printer" | "phone" | "tv" | "network" | "other" | "hard_drive")
   if (status) query = query.eq("status", status as "received" | "in_process" | "tested" | "graded" | "sanitized" | "available" | "sold" | "recycled" | "on_hold")
   if (tracking_mode) query = query.eq("tracking_mode", tracking_mode as "serialized" | "bulk")
   if (destination) query = query.eq("asset_destination", destination as "external_reuse" | "recycle" | "internal_reuse" | "pending")

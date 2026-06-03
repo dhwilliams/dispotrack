@@ -52,6 +52,7 @@ const TYPE_COLORS: Record<string, string> = {
   tv: "bg-fuchsia-100 text-fuchsia-800",
   network: "bg-lime-100 text-lime-800",
   other: "bg-gray-100 text-gray-800",
+  hard_drive: "bg-stone-200 text-stone-800",
 }
 
 // ---------------------------------------------------------------------------

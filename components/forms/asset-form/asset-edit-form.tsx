@@ -60,7 +60,7 @@ import type {
 
 const ASSET_TYPES = [
   "desktop", "server", "laptop", "tablet", "monitor", "printer",
-  "phone", "tv", "network", "other",
+  "phone", "tv", "network", "other", "hard_drive",
 ] as const
 
 const COSMETIC_GRADES = [

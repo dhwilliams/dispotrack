@@ -256,6 +256,7 @@ Dell (most common by far), HP, Lenovo, Apple, DataCard, Cisco, various others.
 8. Network equipment
 9. Tablet (added Phase 7c — mirrors laptop fields minus optical drive)
 10. TV (rare)
+11. Hard Drive (added Phase 7k — standalone drive received without a parent device; the asset IS the drive)
 
 ### Chassis Types
 - SFF Desktop (Small Form Factor — most common)

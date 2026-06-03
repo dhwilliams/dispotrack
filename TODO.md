@@ -654,19 +654,24 @@
 - [ ] Confirm dialog showing the affected count before commit
 - [ ] Tests: vitest for the bulk shipment insert path; e2e for select-many + Ship dialog → confirm DB rows + DB consistent state
 
-### 7k — New Hard Drive Asset Type
-- [ ] Migration `00011_hard_drive_asset_type.sql` (number may shift to 00012 if 7j lands first):
-  - [ ] ALTER `assets` CHECK constraint to include `'hard_drive'` (drop + recreate, 11 types total)
-  - [ ] ALTER `asset_type_field_definitions` CHECK constraint same way
-  - [ ] Seed `asset_type_field_definitions` for hard_drive:
-    - Hardware: `size` (text — e.g. "1TB"), `drive_type` (select, options ["HDD","SSD","M.2","NVMe"])
-    - Type-specific: any additional notes Amber wants here (TBD — flag at implementation time)
-- [ ] Update `lib/supabase/types.ts` asset_type union — add `'hard_drive'`
-- [ ] Add hard_drive to all 4 client-side ASSET_TYPES arrays + 2 server casts (same surfaces as 7c tablet)
-- [ ] Add hard_drive color to dashboard `TYPE_COLORS` map (pick distinct — e.g. orange or stone)
-- [ ] **HD Crush typeahead**: extend `app/(app)/hd-crush/actions.ts` search to also match standalone `assets.serial_number` where `asset_type = 'hard_drive'` (not just `asset_hard_drives.serial_number`). Display the asset itself rather than searching for a parent.
-- [ ] Update `CLAUDE.md` asset types table + `.agents/workflow-expert.md` common types list
-- [ ] Tests: vitest for schema; e2e for create + edit form rendering correct fields
+### 7k — New Hard Drive Asset Type ✅
+- [x] Migration `supabase/migrations/00012_hard_drive_asset_type.sql` (bumped from 00011 because 7l took that number):
+  - [x] ALTER `assets` CHECK constraint to include `'hard_drive'` (11 types total)
+  - [x] ALTER `asset_type_field_definitions` CHECK constraint same way
+  - [x] Seed `asset_type_field_definitions` for hard_drive:
+    - Hardware: `size` (text — e.g. "1TB"), `drive_type` (select, options `["HDD","SSD","M.2","NVMe"]`)
+    - Type-specific: NONE seeded. Open question for Amber flagged in verifysteps (can add encryption status / capacity / condition notes via admin Field Definitions UI without code change).
+- [x] Updated `lib/supabase/types.ts` asset_type union — added `'hard_drive'` to all 6 occurrences
+- [x] Added hard_drive to all 4 client-side ASSET_TYPES (intake-form, asset-edit-form, asset-filters, admin-panel) + 4 server casts (assets/page.tsx, api/export/route.ts, api/assets/intake/route.ts, api/assets/[id]/route.ts). **Bonus fix**: PUT handler at api/assets/[id]/route.ts was missing `"tablet"` from 7c — restored symmetry in the same edit.
+- [x] Added hard_drive color to dashboard `TYPE_COLORS` map (`stone-200/stone-800` — distinct from violet/laptop, pink/tablet, rose/server, fuchsia/tv, etc.)
+- [x] **HD Crush typeahead** extended in `app/(app)/hd-crush/actions.ts`:
+  - [x] `DriveSearchResult` gained `kind: "child" | "standalone"` discriminant
+  - [x] `suggestDriveSerials` runs 2 parallel queries (existing asset_hard_drives + new assets where asset_type='hard_drive') and merges (child wins on serial collision, cap 10)
+  - [x] `searchDriveBySerial` tries child first, falls back to standalone. Split into `buildChildResult` + `buildStandaloneResult` helpers. Standalone synthesizes a virtual drive with `id = asset.id` so React keys + crush dispatch stay clean.
+  - [x] New `crushStandaloneHardDrive` action — writes to `asset_sanitization` (device-level) with destruct_shred + tech + validation_date; auto-advances status to sanitized + status_history insert
+  - [x] `components/forms/hd-crush-form.tsx`: dispatches on `result.kind`; card title swaps to "Standalone Hard Drive" when standalone
+- [x] Updated `CLAUDE.md` asset types matrix + `.agents/workflow-expert.md` common types list
+- [x] Tests: 2 vitest + 7 playwright e2e (4 asset-type plumbing + 3 HD Crush including child-drive no-regression). 9/9 first run after fixes, cumulative 97/97 (35 vitest + 62 playwright).
 
 ### 7l — Drive Sub-Form Saves Without Sanitization (Role Gate Optional) ✅
 - [x] Investigation: confirmed there was NO existing client-side or server-side block on blank-sanitization saves. DB allows NULL since 00003 schema v2; handler converts `""` → `null`; Select component handles empty value. The "allow blank save" portion is contract lock-in, not a code fix.
@@ -748,6 +753,6 @@
 | Phase 5: Hardening & Tester Feedback v1 | Complete | 5.1 ✅, 5.2a ✅, 5.2b ✅, 5.2c ✅, 5.2d ✅, 5.2e ✅ |
 | Phase 6: Tester Feedback v2 | Complete | 6a ✅, 6b ✅, 6c ✅ |
 | Phase 7: Tester Feedback v3 | Complete | 7a ✅, 7b ✅, 7c ✅, 7d ✅, 7e ✅ |
-| Phase 7+: Tester Feedback v4 | In Progress | 7f ✅, 7g ✅, 7h ✅, 7i ✅, 7l ✅, 7j bulk shipment, 7k hard_drive type |
+| Phase 7+: Tester Feedback v4 | In Progress | 7f ✅, 7g ✅, 7h ✅, 7i ✅, 7k ✅, 7l ✅, 7j bulk shipment |
 | Phase 11: Production Deployment | Not Started | Vercel setup |
 | Phase 12: Data Migration | Not Started | Caspio export + import script |

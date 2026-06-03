@@ -24,6 +24,7 @@ import {
   searchDriveBySerial,
   suggestDriveSerials,
   crushHardDrive,
+  crushStandaloneHardDrive,
 } from "@/app/(app)/hd-crush/actions"
 import type { DriveSearchResult } from "@/app/(app)/hd-crush/actions"
 
@@ -192,15 +193,20 @@ export function HdCrushForm() {
       setCrushSuccess(null)
 
       startCrushTransition(async () => {
-        const { success, error, allDrivesSanitized } = await crushHardDrive(
-          driveId,
-          result.asset.id,
-          {
-            date_crushed: crushDate,
-            sanitization_tech: crushTech,
-            sanitization_validation: crushValidation,
-          },
-        )
+        // Phase 7k: standalone hard_drive assets dispatch to a different
+        // action that writes to asset_sanitization (device-level).
+        const { success, error, allDrivesSanitized } =
+          result.kind === "standalone"
+            ? await crushStandaloneHardDrive(result.asset.id, {
+                date_crushed: crushDate,
+                sanitization_tech: crushTech,
+                sanitization_validation: crushValidation,
+              })
+            : await crushHardDrive(driveId, result.asset.id, {
+                date_crushed: crushDate,
+                sanitization_tech: crushTech,
+                sanitization_validation: crushValidation,
+              })
 
         if (!success) {
           setCrushError(error ?? "Failed to record crush")
@@ -433,11 +439,14 @@ export function HdCrushForm() {
             </CardContent>
           </Card>
 
-          {/* All drives table */}
+          {/* All drives table — for standalone hard_drive, this shows a
+              single virtual row for the asset itself */}
           <Card>
             <CardHeader>
               <CardTitle>
-                Hard Drives ({result.allDrives.length})
+                {result.kind === "standalone"
+                  ? "Standalone Hard Drive"
+                  : `Hard Drives (${result.allDrives.length})`}
               </CardTitle>
             </CardHeader>
             <CardContent>

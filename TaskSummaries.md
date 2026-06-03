@@ -775,3 +775,26 @@ Error handling hardened:
 - Server-side defense doesn't trust the request payload at all for `receiving_tech` — fetches existing sanitization values from DB and writes those back. This is the simplest invariant ("server is single source of truth for these fields") and doesn't require comparing fields per-column.
 - `canEditSanitization` is keyed only on `!== "receiving_tech"` — admin / operator / viewer all see sanitization (viewer is read-only via RLS anyway). If Amber later wants viewer ALSO gated out, flip to `["admin","operator"].includes(role)`.
 - Open question for Amber (flagged in 7l-verifysteps): the Sanitization Select still has no explicit "Clear" option, so an admin can't un-set a previously chosen method without writing an empty string elsewhere. Workaround is fine today; one-line UI add if she asks.
+
+
+## Phase 7k — New Hard Drive Asset Type
+
+**What was done:**
+- 13 production files + 1 new migration + 3 new test files. Mirrors the Phase 7c (tablet) shape for the asset-type plumbing, but adds substantive HD Crush extensions for the standalone case where the asset IS the drive.
+- Migration `supabase/migrations/00012_hard_drive_asset_type.sql` — bumped to 00012 because 00011 was taken by 7l's RLS migration. Adds `'hard_drive'` to the two CHECK constraints (`assets`, `asset_type_field_definitions`); seeds 2 hardware field defs (`size` text + `drive_type` select with options `["HDD","SSD","M.2","NVMe"]`).
+- Types regenerated (`lib/supabase/types.ts` — 6 occurrences of asset_type union); 4 client ASSET_TYPES arrays updated (intake-form, asset-edit-form, asset-filters, admin-panel); 4 server casts widened (assets/page.tsx, api/export/route.ts, api/assets/intake/route.ts, api/assets/[id]/route.ts). The PUT handler at api/assets/[id]/route.ts was ALSO missing `"tablet"` from Phase 7c — fixed both gaps in one edit. Dashboard `TYPE_COLORS` gained `hard_drive: "bg-stone-200 text-stone-800"`.
+- HD Crush actions (`app/(app)/hd-crush/actions.ts`) substantively extended:
+  - `DriveSearchResult` interface gained `kind: "child" | "standalone"` discriminant.
+  - `suggestDriveSerials` now runs two queries in parallel — the existing `asset_hard_drives` query AND a new one on `assets` filtered to `asset_type='hard_drive'` (pulling `size` from `asset_type_details.details`). Results merged with child winning on serial collision, capped at 10.
+  - `searchDriveBySerial` tries the child path first; if nothing matches, tries the standalone asset path. Refactored into `buildChildResult` (existing logic) + `buildStandaloneResult` (new). The standalone path synthesizes a "virtual drive" whose `id` is the asset id so React keys + the crush dispatch stay clean.
+  - New `crushStandaloneHardDrive(assetId, data)` action — upserts the `asset_sanitization` row with `sanitization_method='destruct_shred'`, `inspection_tech`, `inspection_datetime`, `validation_date`. Auto-advances asset.status from received/in_process/tested/graded → sanitized + writes a status_history row mentioning "standalone hard drive" so future audits can tell the two crush paths apart.
+- HD Crush form (`components/forms/hd-crush-form.tsx`) dispatches on `result.kind` — child path calls existing `crushHardDrive`, standalone path calls new `crushStandaloneHardDrive`. Drive table card title swaps to "Standalone Hard Drive" so operators know what they're looking at.
+- Docs updated: CLAUDE.md asset types matrix; .agents/workflow-expert.md common asset types list (added #11).
+- Tests: 1 vitest schema/seed file + 2 playwright e2e specs (asset-type plumbing × 4 tests + HD Crush flow × 3 tests including child-drive no-regression). All 9 new tests pass; cumulative 97/97 (35 vitest + 62 playwright).
+
+**Notable decisions:**
+- Picked `stone-200/stone-800` for the dashboard color — distinct from pink/tablet, violet/laptop, rose/server, fuchsia/tv. If reads odd next to existing palette, single-line tweak.
+- The standalone "virtual drive" uses the ASSET id as its `id` field — that way the form's `crushDriveId` state naturally becomes the asset id and the dispatch picks the right action. No special marker prefix needed.
+- For standalone, the card title swaps to "Standalone Hard Drive" (singular, no count). The existing "Parent Asset" card title kept as-is — could be renamed to just "Asset" if the wording feels off in practice; flagged for Amber review.
+- Migration number bumped 00011 → 00012 because 7l landed first (its RLS migration took 00011). Updated all docs to reflect.
+- Only seeded `size` + `drive_type` per the prompt. Encryption status / capacity / condition notes deferred — Amber can add via admin Field Definitions UI without code change.

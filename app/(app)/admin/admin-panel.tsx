@@ -134,6 +134,7 @@ const ASSET_TYPES: { value: AssetType; label: string }[] = [
   { value: "tv", label: "TV" },
   { value: "network", label: "Network" },
   { value: "other", label: "Other" },
+  { value: "hard_drive", label: "Hard Drive" },
 ]
 
 const ROUTING_ACTIONS: { value: RoutingAction; label: string }[] = [
