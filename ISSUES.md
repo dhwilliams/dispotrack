@@ -187,3 +187,28 @@
 - The HD Crush standalone + child-drive regression tests both used `page.getByRole("heading", { name: /.../ })` to anchor on the card title swap. Both timed out.
 - Root cause: shadcn `CardTitle` renders as `<div>`, not `<h*>` — documented in MEMORY.md from Phase 7a but I wrote the assertions without grepping for the existing pattern first.
 - **Fix**: switched both call sites to `page.getByText(/.../)`. Added inline comments at the call sites so the next person doesn't trip on it.
+
+
+## Phase 7j
+
+### Issue (real production bug, caught by 600-asset test): handler's recycler lookup wasn't chunked
+- The original `app/api/assets/bulk/route.ts` ship action used `SHIPMENT_INSERT_CHUNK = 500` for both INSERTs AND the `.in("id", ...)` lookup in the recycler block.
+- 500 UUIDs in a `.in()` call builds a URL `?id=in.(uuid,uuid,...)` ≈ 18KB — exceeds PostgREST/Kong URL length limits (~16KB).
+- The supabase-js client got an error response but the handler destructure `const { data: currentAssets } = ...` didn't error-check — silently treated empty result as "nothing to recycle". `recycled: 0` came back with `success: true`.
+- **Impact**: for Amber's actual 2500-asset use case, ~2000 of those assets would have silently failed to auto-recycle (still ended up with shipments but stuck at their pre-shipment status). Would have looked correct in the success toast but the audit trail would be broken.
+- **Fix**: split into `SHIPMENT_INSERT_CHUNK = 500` for INSERTs (data goes in body) and new `LOOKUP_CHUNK = 100` for `.in()` URL queries (~3.6KB per chunk, well under any limit). Added explicit `lookupError` check that returns 500 if the lookup ever fails — no more silent failures.
+
+### Issue (test infrastructure): deleteTransactionsByPrefix per-asset loop blew afterAll timeout
+- `tests/helpers/db.ts › deleteTransactionsByPrefix` looped through each asset and ran 2 deletes per asset (inventory_journal + inventory).
+- For the 600-asset Phase 7j fixture: 1200 round-trips, > 60s. Playwright's afterAll 60s default fired before cleanup finished. Next test's beforeAll also timed out trying to clean.
+- **Fix**: bulk delete via `.in("asset_id", assetIds)` per transaction instead of per-asset loop. Now 2 round-trips regardless of asset count. The helper is shared across all e2e specs; all current and future large fixtures benefit.
+
+### Issue (test-side only): response.json() fails after window.location.reload()
+- The UI test waited for the POST response via `page.waitForResponse(...)`, then did `await response.json()` to assert the response shape. Got `Protocol error: No resource with given identifier found`.
+- Root cause: the `asset-list-wrapper.tsx` Ship handler calls `window.location.reload()` on success. By the time `.json()` ran, the renderer had moved on and the response body was garbage-collected.
+- **Fix**: drop the `.json()` call. `response.status()` is reliably readable; combined with DB verify (since the test has service-role access), it's enough to prove the request landed and the rows were created. Pattern documented inline so future tests don't repeat.
+
+### Issue (test-side only): test verify also hit the .in() URL limit
+- After fixing the handler, the 600-asset test got past inserted/recycled assertions but failed on `expect(count).toBe(600)`. The verify did `adminDb().from("asset_shipments").select(..., { count: "exact", head: true }).in("asset_id", 600_ids)`.
+- Same `.in()` URL-length issue, just on the test side this time (service-role also goes through PostgREST, same proxy, same limit).
+- **Fix**: chunked the verify — 6 round-trips of 100 ids each, sum the counts. Reusable pattern for any future test that verifies large batches.

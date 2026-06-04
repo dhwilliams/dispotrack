@@ -96,9 +96,13 @@ export async function deleteTransactionsByPrefix(prefix: string): Promise<number
       .select("id")
       .eq("transaction_id", t.id);
 
-    for (const a of assets ?? []) {
-      await db.from("inventory_journal").delete().eq("asset_id", a.id);
-      await db.from("inventory").delete().eq("asset_id", a.id);
+    // Bulk delete dependents by asset_id IN (...) instead of looping per asset.
+    // 600-asset fixtures (Phase 7j) made the per-asset loop a minute+ to clean,
+    // which blew the playwright afterAll 60s timeout.
+    const assetIds = (assets ?? []).map((a) => a.id);
+    if (assetIds.length > 0) {
+      await db.from("inventory_journal").delete().in("asset_id", assetIds);
+      await db.from("inventory").delete().in("asset_id", assetIds);
     }
 
     await db.from("assets").delete().eq("transaction_id", t.id);

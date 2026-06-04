@@ -638,21 +638,19 @@
 - [x] `app/(app)/reports/sold/page.tsx` + `components/reports/sold-report.tsx`: added Description column at end. Page extended the `assets()` embed with `asset_type_details(details)`. Empty-state colspan bumped 15 → 16.
 - [x] Tests: +6 playwright e2e (table header + description rendering + CSV header position for each of 3 reports) — 6/6 passing on first run. Cumulative 81/81 (32 vitest + 49 playwright).
 
-### 7j — Bulk Shipment-Info Update
-- [ ] Per Amber: "when 2500 assets are sent to recycler... mass enter shipment info on multiple records at a time"
-- [ ] **Design decision needed**: where does outgoing-shipment data live?
-  - (a) Extend `assets` with shipment_date / carrier / method / tracking_number columns
-  - (b) New `asset_shipments` table (separate from `asset_sales` which is for resale)
-  - (c) Reuse `asset_sales` with a flag (probably wrong — sales-vs-recycling are different)
-  - Recommendation: **(b)** — a new `asset_shipments` table, FK to assets, supports both recycler and one-off non-sale shipments. asset_sales stays sales-specific.
-- [ ] Migration `00011_asset_shipments.sql` (number TBD — bumped by 7k if 7k lands first):
-  - [ ] CREATE `asset_shipments` (id, asset_id FK, shipment_date, carrier, method, tracking_number, recipient_name, recipient_type [recycler/internal/other], notes, created_by, created_at, updated_at)
-  - [ ] Indexes + RLS
-- [ ] Extend `app/api/assets/bulk/route.ts` to accept a "ship" action with shipment fields
-- [ ] Add a "Ship Selected" bulk action button on the asset list (after multi-select)
-- [ ] Bulk dialog UI: date picker, carrier (text), method (text), tracking (text), recipient name + type
-- [ ] Confirm dialog showing the affected count before commit
-- [ ] Tests: vitest for the bulk shipment insert path; e2e for select-many + Ship dialog → confirm DB rows + DB consistent state
+### 7j — Bulk Shipment-Info Update ✅
+- [x] Design locked with user: **(b)** new `asset_shipments` table — many shipments per asset (history, no UNIQUE on asset_id); recycler shipments auto-advance status to `recycled` + log to history; other recipient types leave status alone.
+- [x] Migration `supabase/migrations/00013_asset_shipments.sql` (bumped from 00011 because 7k took 00012):
+  - [x] CREATE `asset_shipments` (id, asset_id FK ON DELETE CASCADE, shipment_date NOT NULL, carrier, method, tracking_number, recipient_name, recipient_type CHECK in 'recycler'/'internal'/'other' NOT NULL, notes, created_by, created_at, updated_at)
+  - [x] 3 indexes (asset_id, shipment_date, recipient_type)
+  - [x] `set_updated_at` trigger via existing `public.handle_updated_at()`
+  - [x] RLS: authenticated read for non-portal users; admin + operator INSERT/UPDATE; admin-only DELETE (audit safety)
+- [x] Extended `app/api/assets/bulk/route.ts` with `action: "ship"` — body `{action, asset_ids, shipment: {...}}`. Validates shipment_date + recipient_type. Chunked INSERT (SHIPMENT_INSERT_CHUNK=500). For recipient_type='recycler': chunked lookup (LOOKUP_CHUNK=100, smaller because .in() builds URL not body) + UPDATE + status_history insert. Returns `{success, inserted, recycled}`.
+- [x] Added "Ship Selected" Button (Send icon) to `components/tables/asset-list-wrapper.tsx`. New Dialog with all shipment fields (date required, recipient_type Select defaulting to recycler, optional recipient_name/carrier/method/tracking/notes). New AlertDialog confirm step that warns about the recycler auto-recycle.
+- [x] New "Shipments" tab on asset detail (`components/forms/asset-form/asset-detail-view.tsx`) showing all shipments most-recent-first. Page fetches via parallel Promise.all in `app/(app)/assets/[id]/page.tsx`.
+- [x] AssetShipment helper exported from `lib/supabase/types.ts`.
+- [x] Tests: 3 vitest schema + 7 playwright e2e (4 direct API tests covering internal/recycler/600-asset-chunked/validation, 1 UI flow, 1 detail page tab, 1 cascade delete). 10/10 passing. Cumulative 107/107 (38 vitest + 69 playwright).
+- [x] **Production bugs caught by tests** (logged in ISSUES.md): (1) handler's recycler lookup wasn't chunked, would have silently failed for Amber's 2500-asset use case; (2) test helper `deleteTransactionsByPrefix` was per-asset loop, blew afterAll 60s timeout — bulk-deleted via `.in()`.
 
 ### 7k — New Hard Drive Asset Type ✅
 - [x] Migration `supabase/migrations/00012_hard_drive_asset_type.sql` (bumped from 00011 because 7l took that number):
@@ -753,6 +751,6 @@
 | Phase 5: Hardening & Tester Feedback v1 | Complete | 5.1 ✅, 5.2a ✅, 5.2b ✅, 5.2c ✅, 5.2d ✅, 5.2e ✅ |
 | Phase 6: Tester Feedback v2 | Complete | 6a ✅, 6b ✅, 6c ✅ |
 | Phase 7: Tester Feedback v3 | Complete | 7a ✅, 7b ✅, 7c ✅, 7d ✅, 7e ✅ |
-| Phase 7+: Tester Feedback v4 | In Progress | 7f ✅, 7g ✅, 7h ✅, 7i ✅, 7k ✅, 7l ✅, 7j bulk shipment |
+| Phase 7+: Tester Feedback v4 | Complete | 7f ✅, 7g ✅, 7h ✅, 7i ✅, 7j ✅, 7k ✅, 7l ✅ |
 | Phase 11: Production Deployment | Not Started | Vercel setup |
 | Phase 12: Data Migration | Not Started | Caspio export + import script |

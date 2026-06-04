@@ -369,6 +369,51 @@ export type Database = {
         }
         Relationships: []
       }
+      asset_shipments: {
+        Row: {
+          id: string
+          asset_id: string
+          shipment_date: string
+          carrier: string | null
+          method: string | null
+          tracking_number: string | null
+          recipient_name: string | null
+          recipient_type: 'recycler' | 'internal' | 'other'
+          notes: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          asset_id: string
+          shipment_date: string
+          carrier?: string | null
+          method?: string | null
+          tracking_number?: string | null
+          recipient_name?: string | null
+          recipient_type: 'recycler' | 'internal' | 'other'
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          asset_id?: string
+          shipment_date?: string
+          carrier?: string | null
+          method?: string | null
+          tracking_number?: string | null
+          recipient_name?: string | null
+          recipient_type?: 'recycler' | 'internal' | 'other'
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       asset_sanitization: {
         Row: {
           id: string
@@ -894,6 +939,7 @@ export type AssetGrading = Tables<'asset_grading'>
 export type AssetTypeDetails = Tables<'asset_type_details'>
 export type AssetTypeFieldDefinition = Tables<'asset_type_field_definitions'>
 export type AssetSanitization = Tables<'asset_sanitization'>
+export type AssetShipment = Tables<'asset_shipments'>
 export type Buyer = Tables<'buyers'>
 export type AssetSales = Tables<'asset_sales'>
 export type AssetStatusHistory = Tables<'asset_status_history'>

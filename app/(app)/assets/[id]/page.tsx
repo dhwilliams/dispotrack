@@ -13,6 +13,7 @@ import type {
   AssetHardDrive,
   AssetSanitization,
   AssetSales,
+  AssetShipment,
   AssetStatusHistory,
   Buyer,
   Inventory,
@@ -82,6 +83,7 @@ export default async function AssetDetailPage({ params }: AssetDetailPageProps) 
     { data: statusHistory },
     { data: inventory },
     { data: inventoryJournal },
+    { data: shipments },
   ] = await Promise.all([
     supabase
       .from("asset_grading")
@@ -127,6 +129,12 @@ export default async function AssetDetailPage({ params }: AssetDetailPageProps) 
       .select("*")
       .eq("asset_id", id)
       .order("performed_at", { ascending: false }),
+    // Phase 7j — shipments history
+    supabase
+      .from("asset_shipments")
+      .select("*")
+      .eq("asset_id", id)
+      .order("shipment_date", { ascending: false }),
   ])
 
   // Fetch buyer if sales exist
@@ -187,6 +195,7 @@ export default async function AssetDetailPage({ params }: AssetDetailPageProps) 
         inventory={(inventory ?? []) as Inventory[]}
         inventoryJournal={(inventoryJournal ?? []) as InventoryJournal[]}
         settlement={settlement}
+        shipments={(shipments ?? []) as AssetShipment[]}
       />
     </div>
   )

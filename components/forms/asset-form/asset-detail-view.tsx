@@ -21,6 +21,7 @@ import type {
   AssetHardDrive,
   AssetSanitization,
   AssetSales,
+  AssetShipment,
   AssetStatusHistory,
   Buyer,
   Inventory,
@@ -28,6 +29,12 @@ import type {
   AssetSettlement,
   Json,
 } from "@/lib/supabase/types"
+
+const RECIPIENT_TYPE_LABELS: Record<string, string> = {
+  recycler: "Recycler",
+  internal: "Internal",
+  other: "Other",
+}
 
 const STATUS_COLORS: Record<string, string> = {
   received: "bg-blue-100 text-blue-800",
@@ -113,6 +120,7 @@ interface AssetDetailViewProps {
   inventory: Inventory[]
   inventoryJournal: InventoryJournal[]
   settlement: AssetSettlement | null
+  shipments?: AssetShipment[]
 }
 
 function Field({ label, value }: { label: string; value: string | number | null | undefined }) {
@@ -147,6 +155,7 @@ export function AssetDetailView({
   inventory,
   inventoryJournal,
   settlement,
+  shipments = [],
 }: AssetDetailViewProps) {
   const hwFields = fieldDefinitions.filter((f) => f.field_group === "hardware")
   const tsFields = fieldDefinitions.filter((f) => f.field_group === "type_specific")
@@ -175,6 +184,7 @@ export function AssetDetailView({
           <TabsTrigger value="status">Status</TabsTrigger>
           <TabsTrigger value="sanitization">Sanitization</TabsTrigger>
           <TabsTrigger value="sales">Sales</TabsTrigger>
+          <TabsTrigger value="shipments">Shipments</TabsTrigger>
           <TabsTrigger value="inventory">Inventory</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
         </TabsList>
@@ -423,6 +433,60 @@ export function AssetDetailView({
                 </>
               ) : (
                 <p className="text-sm text-muted-foreground">No sales record.</p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Shipments Tab (Phase 7j) — outgoing-logistics history */}
+        <TabsContent value="shipments">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                Shipments ({shipments.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {shipments.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Shipment Date</TableHead>
+                      <TableHead>Recipient</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Carrier</TableHead>
+                      <TableHead>Method</TableHead>
+                      <TableHead>Tracking #</TableHead>
+                      <TableHead>Notes</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {shipments.map((s) => (
+                      <TableRow key={s.id}>
+                        <TableCell>{s.shipment_date}</TableCell>
+                        <TableCell>{s.recipient_name ?? "—"}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">
+                            {RECIPIENT_TYPE_LABELS[s.recipient_type] ??
+                              s.recipient_type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{s.carrier ?? "—"}</TableCell>
+                        <TableCell>{s.method ?? "—"}</TableCell>
+                        <TableCell className="font-mono text-xs">
+                          {s.tracking_number ?? "—"}
+                        </TableCell>
+                        <TableCell className="max-w-[12rem] truncate text-xs text-muted-foreground">
+                          {s.notes ?? ""}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No shipments recorded for this asset.
+                </p>
               )}
             </CardContent>
           </Card>

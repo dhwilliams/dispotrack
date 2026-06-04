@@ -4,6 +4,9 @@ import { useState, useCallback } from "react"
 import { useSearchParams } from "next/navigation"
 import { AssetTable } from "./asset-table"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,13 +18,21 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Download, RefreshCw } from "lucide-react"
+import { Download, RefreshCw, Send } from "lucide-react"
 import { toast } from "sonner"
 import type { AssetRow } from "./asset-table"
 
@@ -46,6 +57,13 @@ const DESTINATION_OPTIONS = [
   { value: "pending", label: "Pending" },
 ] as const
 
+// Phase 7j — Ship dialog
+const RECIPIENT_TYPES = [
+  { value: "recycler", label: "Recycler" },
+  { value: "internal", label: "Internal" },
+  { value: "other", label: "Other" },
+] as const
+
 export function AssetListWrapper({
   assets,
   totalCount,
@@ -60,6 +78,20 @@ export function AssetListWrapper({
   const [bulkValue, setBulkValue] = useState("")
   const [applying, setApplying] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
+
+  // Phase 7j — Ship dialog state
+  const [shipDialogOpen, setShipDialogOpen] = useState(false)
+  const [shipConfirmOpen, setShipConfirmOpen] = useState(false)
+  const [shipDate, setShipDate] = useState(() => new Date().toISOString().split("T")[0])
+  const [shipCarrier, setShipCarrier] = useState("")
+  const [shipMethod, setShipMethod] = useState("")
+  const [shipTracking, setShipTracking] = useState("")
+  const [shipRecipientName, setShipRecipientName] = useState("")
+  const [shipRecipientType, setShipRecipientType] = useState<
+    "recycler" | "internal" | "other"
+  >("recycler")
+  const [shipNotes, setShipNotes] = useState("")
+  const [shipping, setShipping] = useState(false)
 
   const totalPages = Math.ceil(totalCount / perPage)
   const from = (page - 1) * perPage + 1
@@ -120,6 +152,71 @@ export function AssetListWrapper({
       setApplying(false)
     }
   }, [bulkAction, bulkValue, selectedIds])
+
+  // Phase 7j — Ship handler
+  const resetShipForm = useCallback(() => {
+    setShipDate(new Date().toISOString().split("T")[0])
+    setShipCarrier("")
+    setShipMethod("")
+    setShipTracking("")
+    setShipRecipientName("")
+    setShipRecipientType("recycler")
+    setShipNotes("")
+  }, [])
+
+  const handleShipApply = useCallback(async () => {
+    if (selectedIds.length === 0) return
+    setShipping(true)
+    try {
+      const res = await fetch("/api/assets/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "ship",
+          asset_ids: selectedIds,
+          shipment: {
+            shipment_date: shipDate,
+            carrier: shipCarrier || null,
+            method: shipMethod || null,
+            tracking_number: shipTracking || null,
+            recipient_name: shipRecipientName || null,
+            recipient_type: shipRecipientType,
+            notes: shipNotes || null,
+          },
+        }),
+      })
+      const result = await res.json()
+      if (result.success) {
+        const recycledNote = result.recycled
+          ? ` — ${result.recycled} marked recycled`
+          : ""
+        toast.success(
+          `Shipped ${result.inserted} asset${result.inserted === 1 ? "" : "s"}${recycledNote}`,
+        )
+        setSelectedIds([])
+        setShipDialogOpen(false)
+        setShipConfirmOpen(false)
+        resetShipForm()
+        window.location.reload()
+      } else {
+        toast.error(result.error || "Bulk ship failed")
+      }
+    } catch {
+      toast.error("Bulk ship failed")
+    } finally {
+      setShipping(false)
+    }
+  }, [
+    selectedIds,
+    shipDate,
+    shipCarrier,
+    shipMethod,
+    shipTracking,
+    shipRecipientName,
+    shipRecipientType,
+    shipNotes,
+    resetShipForm,
+  ])
 
   return (
     <div className="space-y-4">
@@ -184,6 +281,19 @@ export function AssetListWrapper({
                   )}
                 </Button>
               )}
+              {/* Phase 7j — Ship Selected button: separate from the Bulk
+                  action Select because it opens a multi-field dialog
+                  rather than a single inline value. */}
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs"
+                onClick={() => setShipDialogOpen(true)}
+                disabled={shipping}
+              >
+                <Send className="mr-1 h-3 w-3" />
+                Ship Selected
+              </Button>
             </>
           )}
         </div>
@@ -274,6 +384,155 @@ export function AssetListWrapper({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => { setConfirmOpen(false); handleBulkApply() }}>
               Apply Changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Phase 7j — Ship Selected dialog */}
+      <Dialog open={shipDialogOpen} onOpenChange={setShipDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Ship Selected Assets</DialogTitle>
+            <DialogDescription>
+              Record shipment info for {selectedIds.length} selected asset
+              {selectedIds.length === 1 ? "" : "s"}. Recycler shipments will
+              also mark the assets as <strong>Recycled</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="ship-date">Shipment Date *</Label>
+                <Input
+                  id="ship-date"
+                  type="date"
+                  value={shipDate}
+                  onChange={(e) => setShipDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="ship-recipient-type">Recipient Type *</Label>
+                <Select
+                  value={shipRecipientType}
+                  onValueChange={(v) =>
+                    setShipRecipientType(v as "recycler" | "internal" | "other")
+                  }
+                >
+                  <SelectTrigger id="ship-recipient-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RECIPIENT_TYPES.map((r) => (
+                      <SelectItem key={r.value} value={r.value}>
+                        {r.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="ship-recipient-name">Recipient Name</Label>
+              <Input
+                id="ship-recipient-name"
+                placeholder="e.g. Acme Recyclers"
+                value={shipRecipientName}
+                onChange={(e) => setShipRecipientName(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="ship-carrier">Carrier</Label>
+                <Input
+                  id="ship-carrier"
+                  placeholder="e.g. UPS"
+                  value={shipCarrier}
+                  onChange={(e) => setShipCarrier(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="ship-method">Method</Label>
+                <Input
+                  id="ship-method"
+                  placeholder="e.g. Ground"
+                  value={shipMethod}
+                  onChange={(e) => setShipMethod(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="ship-tracking">Tracking Number</Label>
+              <Input
+                id="ship-tracking"
+                value={shipTracking}
+                onChange={(e) => setShipTracking(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="ship-notes">Notes</Label>
+              <Textarea
+                id="ship-notes"
+                rows={2}
+                value={shipNotes}
+                onChange={(e) => setShipNotes(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShipDialogOpen(false)
+                resetShipForm()
+              }}
+              disabled={shipping}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => setShipConfirmOpen(true)}
+              disabled={shipping || !shipDate}
+            >
+              {shipping ? (
+                <><RefreshCw className="mr-1 h-3 w-3 animate-spin" /> Shipping...</>
+              ) : (
+                <>Ship {selectedIds.length}</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Phase 7j — Ship confirm dialog (count + recycler warning) */}
+      <AlertDialog open={shipConfirmOpen} onOpenChange={setShipConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Bulk Shipment</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will record a shipment for{" "}
+              <strong>{selectedIds.length}</strong> asset
+              {selectedIds.length === 1 ? "" : "s"} to{" "}
+              <strong>{shipRecipientType}</strong>
+              {shipRecipientType === "recycler" && (
+                <>
+                  {" "}
+                  and mark them as <strong>Recycled</strong> (status history
+                  logged)
+                </>
+              )}
+              . This action cannot be bulk-undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShipConfirmOpen(false)
+                handleShipApply()
+              }}
+            >
+              Confirm
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

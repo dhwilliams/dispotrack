@@ -798,3 +798,26 @@ Error handling hardened:
 - For standalone, the card title swaps to "Standalone Hard Drive" (singular, no count). The existing "Parent Asset" card title kept as-is — could be renamed to just "Asset" if the wording feels off in practice; flagged for Amber review.
 - Migration number bumped 00011 → 00012 because 7l landed first (its RLS migration took 00011). Updated all docs to reflect.
 - Only seeded `size` + `drive_type` per the prompt. Encryption status / capacity / condition notes deferred — Amber can add via admin Field Definitions UI without code change.
+
+
+## Phase 7j — Bulk Shipment-Info Update
+
+**What was done:**
+- 6 production files + 1 new migration + 2 new test files. Biggest item in Phase 7+ and the final one.
+- Design locked with user upfront: many-shipments-per-asset (no UNIQUE on asset_id, preserves full history including recall/reship); recycler shipments auto-advance asset.status to 'recycled' + log to asset_status_history; other recipient types (internal/other) leave status alone.
+- Migration `supabase/migrations/00013_asset_shipments.sql` — new `asset_shipments` table with FK asset_id ON DELETE CASCADE, shipment_date NOT NULL, carrier/method/tracking_number/recipient_name/notes optional, recipient_type CHECK in ('recycler','internal','other') NOT NULL, created_by FK auth.users, timestamps via `set_updated_at` trigger using existing `public.handle_updated_at()`. 3 indexes (asset_id, shipment_date, recipient_type). RLS: non-portal users read; admin+operator INSERT/UPDATE; admin-only DELETE for audit safety.
+- Extended `app/api/assets/bulk/route.ts` with new `action: "ship"`. Body `{action, asset_ids, shipment: {shipment_date, carrier?, method?, tracking_number?, recipient_name?, recipient_type, notes?}}`. Validates shipment_date + recipient_type, returns 400 on failure. Inserts shipment rows in chunks of 500 (SHIPMENT_INSERT_CHUNK). For recipient_type='recycler' AND status != 'recycled': chunked lookup + UPDATE + status_history insert. Returns `{success, inserted, recycled}`.
+- Asset list (`components/tables/asset-list-wrapper.tsx`): new "Ship Selected" Button (Send icon) next to the existing Bulk action Select. Visible only when ≥1 row selected. Opens a Dialog with all shipment fields (date required, recipient_type Select defaulting to recycler, optional recipient_name/carrier/method/tracking/notes). AlertDialog confirm step warns about the recycler auto-recycle. On success: counts in toast, page reload.
+- Asset detail view (`components/forms/asset-form/asset-detail-view.tsx`): new "Shipments" tab between Sales and Inventory. Read-only table (Shipment Date / Recipient / Type badge / Carrier / Method / Tracking # / Notes), most-recent-first. Detail page (`app/(app)/assets/[id]/page.tsx`) parallel-fetches asset_shipments in the existing Promise.all.
+- `lib/supabase/types.ts` — added asset_shipments Row/Insert/Update + `AssetShipment` helper export, inserted alphabetically before asset_sanitization.
+- Tests: 3 vitest schema contract tests (recipient_type CHECK accepts each value, rejects garbage, ON DELETE CASCADE removes shipments) + 7 playwright e2e (4 direct-POST API tests covering internal/recycler/600-asset-chunked/2 validation flavors, 1 full UI flow with checkbox selection and dialog confirm, 1 detail page Shipments tab render, 1 cascade test). Cumulative 107/107 (38 vitest + 69 playwright).
+
+**Notable decisions:**
+- Split the chunk constant into TWO: `SHIPMENT_INSERT_CHUNK = 500` for INSERTs (data goes in body) and `LOOKUP_CHUNK = 100` for `.in()` queries (URL-bound). The 600-asset test surfaced this — `.in("id", 500_ids)` was silently exceeding PostgREST's URL length limit and the handler wasn't error-checking the lookup. Real production bug — would have silently failed for Amber's actual 2500-asset use case. Added explicit `lookupError` check that returns 500 if it ever happens again.
+- The Ship action is its own first-class action in the bulk handler, separate from status/destination. The body shape doesn't share the `value: string` field (shipment is a structured object). Kept the existing actions backward-compatible by adding `shipment?` as optional and value-bearing actions still require value.
+- Detail page Shipments tab is read-only. No edit/delete UI — admin-only DELETE in RLS is in place but no UX surface. If Amber needs to fix a typo on a shipment record, that's a separate add (flagged in verifysteps open questions).
+- A recycler shipment sets `status='recycled'` but does NOT change `asset_destination`. Open question for Amber — flagged. May want both, easy to add.
+- The bulk INSERT can partial-fail (some chunks succeed, later ones fail). The handler returns `{inserted: N, recycled: M}` so the UI can show partial success — toast displays both counts.
+- Test fixture cleanup: 600-asset cleanup blew the playwright 60s afterAll timeout because `deleteTransactionsByPrefix` looped per-asset. Fixed in the shared helper — bulk delete via `.in("asset_id", assetIds)`. All future large fixtures benefit.
+
+**Phase 7+ fully complete after this step.**
