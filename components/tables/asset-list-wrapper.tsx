@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
 import { AssetTable } from "./asset-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -32,7 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Download, RefreshCw, Send } from "lucide-react"
+import { Download, RefreshCw, Send, DollarSign, UserPlus } from "lucide-react"
 import { toast } from "sonner"
 import type { AssetRow } from "./asset-table"
 
@@ -64,6 +65,17 @@ const RECIPIENT_TYPES = [
   { value: "other", label: "Other" },
 ] as const
 
+// Phase 7m — Sell dialog destination options (subset of full destination set)
+const SELL_DESTINATIONS = [
+  { value: "external_reuse", label: "External Reuse" },
+  { value: "recycle", label: "Recycle (sold to recycling facility)" },
+] as const
+
+interface BuyerRow {
+  id: string
+  name: string
+}
+
 export function AssetListWrapper({
   assets,
   totalCount,
@@ -78,6 +90,71 @@ export function AssetListWrapper({
   const [bulkValue, setBulkValue] = useState("")
   const [applying, setApplying] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
+
+  // Phase 7m — Sell dialog state
+  const [sellDialogOpen, setSellDialogOpen] = useState(false)
+  const [sellConfirmOpen, setSellConfirmOpen] = useState(false)
+  const [sellSoldDate, setSellSoldDate] = useState(() => new Date().toISOString().split("T")[0])
+  const [sellDestination, setSellDestination] = useState<
+    "external_reuse" | "recycle"
+  >("external_reuse")
+  const [sellBuyerId, setSellBuyerId] = useState("")
+  const [sellLogistaSo, setSellLogistaSo] = useState("")
+  const [sellCustomerPo, setSellCustomerPo] = useState("")
+  const [sellSoldToName, setSellSoldToName] = useState("")
+  const [sellSoldToAddress1, setSellSoldToAddress1] = useState("")
+  const [sellSoldToCity, setSellSoldToCity] = useState("")
+  const [sellSoldToState, setSellSoldToState] = useState("")
+  const [sellSoldToZip, setSellSoldToZip] = useState("")
+  const [sellSalePrice, setSellSalePrice] = useState("")
+  const [sellShipmentDate, setSellShipmentDate] = useState("")
+  const [sellShipmentCarrier, setSellShipmentCarrier] = useState("")
+  const [sellShipmentMethod, setSellShipmentMethod] = useState("")
+  const [sellShipmentTracking, setSellShipmentTracking] = useState("")
+  const [selling, setSelling] = useState(false)
+
+  // Lazy-load buyers when the Sell dialog opens
+  const [buyers, setBuyers] = useState<BuyerRow[]>([])
+  const [buyersLoaded, setBuyersLoaded] = useState(false)
+  const [newBuyerOpen, setNewBuyerOpen] = useState(false)
+  const [newBuyerName, setNewBuyerName] = useState("")
+
+  useEffect(() => {
+    if (!sellDialogOpen || buyersLoaded) return
+    const load = async () => {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from("buyers")
+        .select("id, name")
+        .order("name")
+      setBuyers((data ?? []) as BuyerRow[])
+      setBuyersLoaded(true)
+    }
+    load()
+  }, [sellDialogOpen, buyersLoaded])
+
+  const createBuyer = useCallback(async () => {
+    if (!newBuyerName.trim()) return
+    try {
+      const res = await fetch("/api/buyers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newBuyerName.trim() }),
+      })
+      const result = await res.json()
+      if (result.success && result.buyer) {
+        setBuyers((prev) => [...prev, { id: result.buyer.id, name: result.buyer.name }])
+        setSellBuyerId(result.buyer.id)
+        setNewBuyerOpen(false)
+        setNewBuyerName("")
+        toast.success(`Buyer "${result.buyer.name}" created`)
+      } else {
+        toast.error(result.error || "Failed to create buyer")
+      }
+    } catch {
+      toast.error("Failed to create buyer")
+    }
+  }, [newBuyerName])
 
   // Phase 7j — Ship dialog state
   const [shipDialogOpen, setShipDialogOpen] = useState(false)
@@ -152,6 +229,95 @@ export function AssetListWrapper({
       setApplying(false)
     }
   }, [bulkAction, bulkValue, selectedIds])
+
+  // Phase 7m — Sell handler
+  const resetSellForm = useCallback(() => {
+    setSellSoldDate(new Date().toISOString().split("T")[0])
+    setSellDestination("external_reuse")
+    setSellBuyerId("")
+    setSellLogistaSo("")
+    setSellCustomerPo("")
+    setSellSoldToName("")
+    setSellSoldToAddress1("")
+    setSellSoldToCity("")
+    setSellSoldToState("")
+    setSellSoldToZip("")
+    setSellSalePrice("")
+    setSellShipmentDate("")
+    setSellShipmentCarrier("")
+    setSellShipmentMethod("")
+    setSellShipmentTracking("")
+  }, [])
+
+  const handleSellApply = useCallback(async () => {
+    if (selectedIds.length === 0) return
+    setSelling(true)
+    try {
+      const res = await fetch("/api/assets/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "sell",
+          asset_ids: selectedIds,
+          asset_destination: sellDestination,
+          sale: {
+            buyer_id: sellBuyerId || null,
+            logista_so: sellLogistaSo || null,
+            customer_po_number: sellCustomerPo || null,
+            sold_to_name: sellSoldToName || null,
+            sold_to_address1: sellSoldToAddress1 || null,
+            sold_to_city: sellSoldToCity || null,
+            sold_to_state: sellSoldToState || null,
+            sold_to_zip: sellSoldToZip || null,
+            sale_price: sellSalePrice ? parseFloat(sellSalePrice) : null,
+            sold_date: sellSoldDate,
+            shipment_date: sellShipmentDate || null,
+            shipment_carrier: sellShipmentCarrier || null,
+            shipment_method: sellShipmentMethod || null,
+            shipment_tracking_number: sellShipmentTracking || null,
+          },
+        }),
+      })
+      const result = await res.json()
+      if (result.success) {
+        const skipped = result.alreadySold
+          ? ` — ${result.alreadySold} already sold, skipped`
+          : ""
+        toast.success(
+          `Sold ${result.inserted} asset${result.inserted === 1 ? "" : "s"}${skipped}`,
+        )
+        setSelectedIds([])
+        setSellDialogOpen(false)
+        setSellConfirmOpen(false)
+        resetSellForm()
+        window.location.reload()
+      } else {
+        toast.error(result.error || "Bulk sell failed")
+      }
+    } catch {
+      toast.error("Bulk sell failed")
+    } finally {
+      setSelling(false)
+    }
+  }, [
+    selectedIds,
+    sellDestination,
+    sellBuyerId,
+    sellLogistaSo,
+    sellCustomerPo,
+    sellSoldToName,
+    sellSoldToAddress1,
+    sellSoldToCity,
+    sellSoldToState,
+    sellSoldToZip,
+    sellSalePrice,
+    sellSoldDate,
+    sellShipmentDate,
+    sellShipmentCarrier,
+    sellShipmentMethod,
+    sellShipmentTracking,
+    resetSellForm,
+  ])
 
   // Phase 7j — Ship handler
   const resetShipForm = useCallback(() => {
@@ -293,6 +459,19 @@ export function AssetListWrapper({
               >
                 <Send className="mr-1 h-3 w-3" />
                 Ship Selected
+              </Button>
+              {/* Phase 7m — Sell Selected: writes asset_sales row + status='sold'
+                  + destination. Replaces the old bulk Update Status → sold
+                  path which was a no-op for the Sold report. */}
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs"
+                onClick={() => setSellDialogOpen(true)}
+                disabled={selling}
+              >
+                <DollarSign className="mr-1 h-3 w-3" />
+                Sell Selected
               </Button>
             </>
           )}
@@ -530,6 +709,291 @@ export function AssetListWrapper({
               onClick={() => {
                 setShipConfirmOpen(false)
                 handleShipApply()
+              }}
+            >
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Phase 7m — Sell Selected dialog */}
+      <Dialog open={sellDialogOpen} onOpenChange={setSellDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Sell Selected Assets</DialogTitle>
+            <DialogDescription>
+              Record sale info for {selectedIds.length} selected asset
+              {selectedIds.length === 1 ? "" : "s"}. All assets will be marked{" "}
+              <strong>Sold</strong> with the destination you pick. Sale price
+              applies to all — edit individual outliers on the Sales tab after.
+              Assets that already have a sale record will be skipped.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="sell-sold-date">Sold Date *</Label>
+                <Input
+                  id="sell-sold-date"
+                  type="date"
+                  value={sellSoldDate}
+                  onChange={(e) => setSellSoldDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="sell-destination">Destination *</Label>
+                <Select
+                  value={sellDestination}
+                  onValueChange={(v) =>
+                    setSellDestination(v as "external_reuse" | "recycle")
+                  }
+                >
+                  <SelectTrigger id="sell-destination">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SELL_DESTINATIONS.map((d) => (
+                      <SelectItem key={d.value} value={d.value}>
+                        {d.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="sell-buyer">Buyer</Label>
+                <Dialog open={newBuyerOpen} onOpenChange={setNewBuyerOpen}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs"
+                    onClick={() => setNewBuyerOpen(true)}
+                  >
+                    <UserPlus className="mr-1 h-3 w-3" />
+                    New Buyer
+                  </Button>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Create New Buyer</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="new-buyer-name">Name *</Label>
+                        <Input
+                          id="new-buyer-name"
+                          value={newBuyerName}
+                          onChange={(e) => setNewBuyerName(e.target.value)}
+                        />
+                      </div>
+                      <Button
+                        onClick={createBuyer}
+                        disabled={!newBuyerName.trim()}
+                      >
+                        Create Buyer
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+              <Select value={sellBuyerId} onValueChange={setSellBuyerId}>
+                <SelectTrigger id="sell-buyer">
+                  <SelectValue placeholder="Select buyer..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {buyers.map((b) => (
+                    <SelectItem key={b.id} value={b.id}>
+                      {b.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="sell-logista-so">Logista SO</Label>
+                <Input
+                  id="sell-logista-so"
+                  value={sellLogistaSo}
+                  onChange={(e) => setSellLogistaSo(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="sell-customer-po">Customer PO</Label>
+                <Input
+                  id="sell-customer-po"
+                  value={sellCustomerPo}
+                  onChange={(e) => setSellCustomerPo(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="sell-sale-price">
+                Sale Price ($){" "}
+                <span className="text-xs text-muted-foreground">
+                  (applied to all — edit outliers individually after)
+                </span>
+              </Label>
+              <Input
+                id="sell-sale-price"
+                type="number"
+                step="0.01"
+                value={sellSalePrice}
+                onChange={(e) => setSellSalePrice(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="sell-sold-to-name">Sold To Name</Label>
+              <Input
+                id="sell-sold-to-name"
+                value={sellSoldToName}
+                onChange={(e) => setSellSoldToName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="sell-sold-to-address1">Address</Label>
+              <Input
+                id="sell-sold-to-address1"
+                value={sellSoldToAddress1}
+                onChange={(e) => setSellSoldToAddress1(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="space-y-1">
+                <Label htmlFor="sell-sold-to-city" className="text-xs">
+                  City
+                </Label>
+                <Input
+                  id="sell-sold-to-city"
+                  value={sellSoldToCity}
+                  onChange={(e) => setSellSoldToCity(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="sell-sold-to-state" className="text-xs">
+                  State
+                </Label>
+                <Input
+                  id="sell-sold-to-state"
+                  value={sellSoldToState}
+                  onChange={(e) => setSellSoldToState(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="sell-sold-to-zip" className="text-xs">
+                  ZIP
+                </Label>
+                <Input
+                  id="sell-sold-to-zip"
+                  value={sellSoldToZip}
+                  onChange={(e) => setSellSoldToZip(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="rounded-md border bg-muted/30 p-3 space-y-3">
+              <p className="text-xs font-medium text-muted-foreground">
+                Shipment (optional)
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="sell-ship-date" className="text-xs">
+                    Date
+                  </Label>
+                  <Input
+                    id="sell-ship-date"
+                    type="date"
+                    value={sellShipmentDate}
+                    onChange={(e) => setSellShipmentDate(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="sell-ship-carrier" className="text-xs">
+                    Carrier
+                  </Label>
+                  <Input
+                    id="sell-ship-carrier"
+                    value={sellShipmentCarrier}
+                    onChange={(e) => setSellShipmentCarrier(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="sell-ship-method" className="text-xs">
+                    Method
+                  </Label>
+                  <Input
+                    id="sell-ship-method"
+                    value={sellShipmentMethod}
+                    onChange={(e) => setSellShipmentMethod(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="sell-ship-tracking" className="text-xs">
+                    Tracking #
+                  </Label>
+                  <Input
+                    id="sell-ship-tracking"
+                    value={sellShipmentTracking}
+                    onChange={(e) => setSellShipmentTracking(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSellDialogOpen(false)
+                resetSellForm()
+              }}
+              disabled={selling}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => setSellConfirmOpen(true)}
+              disabled={selling || !sellSoldDate}
+            >
+              {selling ? (
+                <>
+                  <RefreshCw className="mr-1 h-3 w-3 animate-spin" /> Selling...
+                </>
+              ) : (
+                <>Sell {selectedIds.length}</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Phase 7m — Sell confirm dialog */}
+      <AlertDialog open={sellConfirmOpen} onOpenChange={setSellConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Bulk Sale</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will record a sale for <strong>{selectedIds.length}</strong>{" "}
+              asset{selectedIds.length === 1 ? "" : "s"}, mark them as{" "}
+              <strong>Sold</strong>, and set destination to{" "}
+              <strong>
+                {sellDestination === "external_reuse"
+                  ? "External Reuse"
+                  : "Recycle"}
+              </strong>
+              . Status history will be logged for any assets whose status
+              actually changed. Assets that already have a sale record will be
+              skipped.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setSellConfirmOpen(false)
+                handleSellApply()
               }}
             >
               Confirm

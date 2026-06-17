@@ -969,6 +969,49 @@ Do not commit until I review. No co-authoring on commits.
 
 ---
 
+### Phase 7++ Tester Feedback (Amber v5 — 6/03/2026)
+
+> Bulk Update Status → sold puts assets in a broken state (status='sold' but no asset_sales row, so they're invisible to the Sold report). Amber wants a real bulk Sell flow that mirrors the per-asset Sales tab.
+
+**7m — Bulk Sell Action + Sold-Report Fix**
+```
+@TODO.md @CLAUDE.md @.agents/api-architect.md @.agents/ui-builder.md @.agents/workflow-expert.md
+
+Mark the previous step as complete. Proceed with Phase 7m — Bulk Sell Action + Sold-Report Fix and ONLY that step.
+
+Use api-architect for the route handler extension + chunking semantics (mirror 7j's SHIPMENT_INSERT_CHUNK=500 and LOOKUP_CHUNK=100), ui-builder for the Sell dialog (mirror 7j's Ship dialog shape), workflow-expert for the destination-on-sale semantics (external_reuse vs recycle). Use TaskCreate to track sub-tasks.
+
+The bug Amber reported: bulk Update Status → sold flips `assets.status='sold'` but doesn't create an `asset_sales` row. The Sold report (`app/(app)/reports/sold/page.tsx`) queries `asset_sales` by `sold_date` — so bulk-sold assets are invisible to the report.
+
+Two things to do, in this order:
+
+1. **Block the broken path**. Extend `app/api/assets/bulk/route.ts` so `action='status'` with `value='sold'` returns 400 with a message pointing to the new Sell Selected dialog. Single-asset sold flips on the asset edit page still work (those go through the Sales tab and create asset_sales properly).
+
+2. **New bulk `sell` action**. Body shape `{action: "sell", asset_ids: [...], sale: {...}, asset_destination: 'external_reuse' | 'recycle'}`. The `sale` object carries all asset_sales fields EXCEPT `ebay_item_number` (per Amber: that varies per listing — leave it for per-asset edit). Bulk-applies the same values to every selected asset including `sale_price`. Validates `sold_date` + `asset_destination` (400 on missing). Chunked INSERT into asset_sales (use SHIPMENT_INSERT_CHUNK=500 from 7j). Chunked UPDATE `assets.status='sold' AND asset_destination=<value>` for all selected. Chunked INSERT into asset_status_history for assets that actually changed status. Returns `{success, inserted, statusUpdated}`.
+
+Decisions locked with Amber:
+- sale_price: SINGLE bulk-applied input. She edits outliers individually on the Sales tab after.
+- asset_destination: per-batch Select with two options — External Reuse (default) and Recycle. BOTH set status='sold'. "Recycle" here means sold to a recycling facility, not the asset_destination='recycle' non-sale path.
+- ebay_item_number: NOT in the bulk dialog (per-asset only).
+- No asset_shipments row created — asset_sales already has shipment_date/carrier/method/tracking_number which is what the Sold report uses. Keep asset_shipments for non-sale logistics from 7j.
+- Backfill: NOT NEEDED — no real production data yet; everything in DB is test data.
+
+UI:
+- New "Sell Selected" Button next to "Ship Selected" in `components/tables/asset-list-wrapper.tsx` (similar pattern — DollarSign icon)
+- Dialog with all asset_sales fields (except ebay_item_number) + the destination Select + buyer reuses the existing BuyerSelect component (searchable + new-buyer quick-add)
+- AlertDialog confirm step warns about the auto-advance to sold + the destination value
+
+Tests:
+- vitest: schema contract for asset_sales insertions; chunking lookup_chunk vs insert_chunk reuse
+- e2e: full UI flow (select rows → Sell Selected → fill → confirm → DB rows + status flipped + history logged + destination set); direct POST validation; existing Update Status → sold returns 400; Sold report finds bulk-sold assets after the action
+
+Any issues or questions — ask me. When complete, write drafts/7m-verifysteps.md then ask whether to verify manually or automate. Tell me what the next step is.
+
+Do not commit until I review. No co-authoring on commits.
+```
+
+---
+
 ### Phase 11: Production Deployment
 
 **11.1 — Production Deployment**

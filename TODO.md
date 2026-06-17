@@ -671,6 +671,29 @@
 - [x] Updated `CLAUDE.md` asset types matrix + `.agents/workflow-expert.md` common types list
 - [x] Tests: 2 vitest + 7 playwright e2e (4 asset-type plumbing + 3 HD Crush including child-drive no-regression). 9/9 first run after fixes, cumulative 97/97 (35 vitest + 62 playwright).
 
+---
+
+## Phase 7++ Tester Feedback (Amber v5 — 6/03/2026)
+
+> Feedback after Amber tried Phase 7j's bulk Ship action. She found that bulk Update Status → sold puts assets in a broken state (status='sold' but no asset_sales row, so they're invisible to the Sold report) and asked for a parallel bulk-sell flow that creates the asset_sales row with all the relevant fields.
+
+### 7m — Bulk Sell Action + Sold-Report Fix ✅
+- [x] **Bug confirmed and fixed** — `assets.status='sold'` without an `asset_sales` row is invisible to the Sold report. The existing bulk Update Status → sold path silently produced this state.
+- [x] **Broken path blocked**: `app/api/assets/bulk/route.ts` now returns 400 with a `useSellSelected: true` flag when `action='status'` and `value='sold'`. Other status values still work (regression-tested).
+- [x] **New `sell` action** added to `app/api/assets/bulk/route.ts`:
+  - Body shape `{action: "sell", asset_ids: [...], sale: {...}, asset_destination: 'external_reuse' | 'recycle'}`
+  - Validates `sold_date` + `asset_destination` (400 on missing)
+  - Pre-filters assets that already have a sale row via chunked `.in("asset_id", chunkIds)` lookups against `asset_sales` (UNIQUE constraint on asset_id means a second INSERT would 23505)
+  - Chunked INSERT into `asset_sales` using `SHIPMENT_INSERT_CHUNK=500` from 7j
+  - Chunked UPDATE `assets.status='sold' + asset_destination=<value>` using `LOOKUP_CHUNK=100` (URL-bound)
+  - Conditional `asset_status_history` INSERT — only for assets whose status actually changed
+  - Returns `{success, inserted, statusUpdated, alreadySold}`
+- [x] **"Sell Selected" Button** in `components/tables/asset-list-wrapper.tsx` with `DollarSign` icon next to "Ship Selected". Dialog has all sale fields per Amber's decisions: single bulk `sale_price` (with helper text "edit outliers individually after"), destination Select (External Reuse default, "Recycle (sold to recycling facility)" option), buyer Select with lazy-loaded list + "New Buyer" quick-add (mirrors edit form pattern via `POST /api/buyers`), shipment sub-section. eBay item # omitted per Amber.
+- [x] AlertDialog confirm step explains auto-status-advance + destination value + already-sold skip behavior. Success toast surfaces both `inserted` and `alreadySold` counts.
+- [x] No migration needed — `asset_sales` table was already in place from Phase 0.2.
+- [x] Tests: 2 vitest schema contracts (UNIQUE on asset_id, ON DELETE CASCADE) + 10 e2e (blocked path + regression + 2 happy paths + pre-filter + conditional history + 2 validation + UI flow + **Sold report visibility**). **All 12 passed on the first run — no production-code changes driven by test work.** Cumulative 119/119 (40 vitest + 79 playwright).
+- [x] Open questions flagged for Amber: should single-asset Status tab also block 'sold'? Allow re-selling (currently UNIQUE skips it)? Pre-fill sold-to from buyer? (All non-blocking; doc'd in verifysteps.)
+
 ### 7l — Drive Sub-Form Saves Without Sanitization (Role Gate Optional) ✅
 - [x] Investigation: confirmed there was NO existing client-side or server-side block on blank-sanitization saves. DB allows NULL since 00003 schema v2; handler converts `""` → `null`; Select component handles empty value. The "allow blank save" portion is contract lock-in, not a code fix.
 - [x] Vitest pins the schema contract (`tests/unit/asset-drive-null-sanitization.test.ts`) so a future migration can't tighten one of the sanitization_* columns.
@@ -752,5 +775,6 @@
 | Phase 6: Tester Feedback v2 | Complete | 6a ✅, 6b ✅, 6c ✅ |
 | Phase 7: Tester Feedback v3 | Complete | 7a ✅, 7b ✅, 7c ✅, 7d ✅, 7e ✅ |
 | Phase 7+: Tester Feedback v4 | Complete | 7f ✅, 7g ✅, 7h ✅, 7i ✅, 7j ✅, 7k ✅, 7l ✅ |
+| Phase 7++: Tester Feedback v5 | Complete | 7m ✅ |
 | Phase 11: Production Deployment | Not Started | Vercel setup |
 | Phase 12: Data Migration | Not Started | Caspio export + import script |

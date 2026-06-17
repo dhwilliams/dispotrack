@@ -821,3 +821,28 @@ Error handling hardened:
 - Test fixture cleanup: 600-asset cleanup blew the playwright 60s afterAll timeout because `deleteTransactionsByPrefix` looped per-asset. Fixed in the shared helper — bulk delete via `.in("asset_id", assetIds)`. All future large fixtures benefit.
 
 **Phase 7+ fully complete after this step.**
+
+
+## Phase 7m — Bulk Sell Action + Sold-Report Fix
+
+**What was done:**
+- 2 production files + 2 new test files. No migration needed — `asset_sales` table was already in place from Phase 0.2.
+- Real bug fixed: bulk Update Status → sold silently produced `assets.status='sold'` without an `asset_sales` row. The Sold report queries `asset_sales.sold_date`, so those assets became invisible. Amber stumbled into this after the 7j bulk Ship action shipped.
+- Route handler (`app/api/assets/bulk/route.ts`):
+  - Blocked `action='status'` + `value='sold'` with a 400 + `useSellSelected: true` flag in the response. Other status values still work (regression-tested).
+  - New `action='sell'` case dispatching to `handleSell(supabase, asset_ids, sale, asset_destination, user.id)`. Validates `sold_date` + `asset_destination ∈ {external_reuse, recycle}` (400 on missing).
+  - Pre-filters via chunked `.in("asset_id", chunkIds)` against `asset_sales` (UNIQUE on asset_id would 23505 otherwise). Already-sold assets are skipped and the count returned in `alreadySold`.
+  - Chunked INSERT into `asset_sales` using `SHIPMENT_INSERT_CHUNK=500` from 7j. Chunked status + destination UPDATE on `assets` using `LOOKUP_CHUNK=100`. `asset_status_history` INSERT is conditional — only for assets whose status actually changed (skip the broken-state pre-sold ones).
+  - Returns `{success, inserted, statusUpdated, alreadySold}`.
+- UI (`components/tables/asset-list-wrapper.tsx`): new "Sell Selected" Button (DollarSign icon) next to "Ship Selected" from 7j. Dialog with all sale fields except eBay item # (per Amber). Buyer Select lazy-loads buyers list on dialog open (mirrors the edit form pattern, no server-side prop drilling). "New Buyer" quick-add Dialog inside the Sell Dialog uses the existing POST /api/buyers endpoint. Destination Select with two options — External Reuse default, "Recycle (sold to recycling facility)" alternative. Sale price helper text explicitly notes "edit outliers individually after" per Amber's decision. AlertDialog confirm step explains auto-status-advance + destination + already-sold skip.
+- Tests: 2 vitest (UNIQUE + ON DELETE CASCADE) + 10 e2e (blocked Update Status → sold, regression for other status values, external_reuse + recycle happy paths, pre-filter for already-sold, conditional history insertion, 2 validation flavors, full UI flow, Sold report visibility proving the bug fix). 12/12 on the FIRST run — no production-code changes driven by test work. Cumulative 119/119 (40 vitest + 79 playwright).
+
+**Notable decisions:**
+- Pre-filter (not UPSERT) for already-sold assets. `asset_sales.asset_id` is UNIQUE — UPSERT would silently overwrite an existing sale row, destroying audit history. Pre-filtering + reporting the skipped count gives Amber explicit signal in the success toast.
+- Status history INSERT is conditional but UPDATE is unconditional. For assets in the broken state (status='sold' but no asset_sales row), the bulk Sell now creates the sale row (fixing the bug), updates destination if needed, but does NOT log a fake status_history event (since status didn't actually change). This is the right behavior — history reflects real transitions.
+- Single-asset Status tab is NOT blocked — only the bulk path. The single-asset edit form's Status tab can still produce the broken state if used directly to flip status='sold' without going through the Sales tab. Flagged as an open question for Amber — same shape of bug but user-driven and outside this phase's scope.
+- No `asset_shipments` row created when selling. `asset_sales` already has shipment_date/carrier/method/tracking_number columns (which the Sold report uses). Keeping shipment writes split: `asset_shipments` for non-sale logistics (recycler/internal/other from 7j), `asset_sales.shipment_*` for sale-shipment journey.
+- Chunking constants from 7j carried directly into the sell handler — no separate tuning. The lesson from 7j (`.in()` URL ≈18KB at 500 ids exceeds PostgREST/Kong limits, body-bound INSERTs scale higher) applies identically.
+- All 12 tests passed on first run. First phase since 7i with zero production-code changes driven by test work. The patterns from 7j (chunking constants, response shape with skip counts, `waitForResponse` + DB verify since `window.location.reload()` kills the response body) transferred cleanly.
+
+**Phase 7++ fully complete after this step.**
